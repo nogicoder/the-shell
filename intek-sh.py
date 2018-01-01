@@ -50,12 +50,11 @@ class Shell:
 
     def do_signal(self, signal, frame):
         try:
-            # self.exit_code = 128 + signal
+            self.exit_code = 128 + signal
             for item in self.pid_list:
-                if signal == 20:
-                    kill(item, 9)
-                else:
-                    kill(item, signal)
+                kill(item, signal)
+                # return to prompt
+                item.kill()
             self.pid_list = []
         except ProcessLookupError:
             pass
@@ -68,6 +67,7 @@ class Shell:
             signal(SIGQUIT, self.do_signal)
             signal(SIGTSTP, self.do_signal)
             signal(SIGTERM, self.do_signal)
+        
 
     # Handling input to match each feature's requirement
     def handle_input(self):
