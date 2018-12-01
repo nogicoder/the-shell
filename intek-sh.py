@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 
-import os
+from os import chdir
+from os import getcwd
+from os import environ
+from os.path import exists
+from os.path import dirname
 from shlex import split
 from subprocess import run
 
@@ -48,14 +52,14 @@ class Shell:
     def printenv(self):
         # if no argument is provided
         if len(self.user_input) is 1:
-            for key in os.environ:
-                print(key + '=' + os.environ[key])
+            for key in environ:
+                print(key + '=' + environ[key])
         # if arguments are provided
         else:
             for key in self.user_input[1:]:
                 try:
-                    print(os.environ[key])
-                # catch KeyError when an argument not exists in os.environ
+                    print(environ[key])
+                # catch KeyError when an argument not exists in environ
                 except KeyError:
                     pass
 
@@ -65,12 +69,14 @@ class Shell:
             if '=' in item:
                 items = item.split('=', 1)
                 if len(items) is 2 and items[0]:
-                    os.environ[items[0]] = items[1]
+                    environ[items[0]] = items[1]
                 else:
                     print('intek-sh: export:' +
                           ' `{}\': not a valid identifier'.format(item))
             else:
-                if item:
+                # handle the case ''; '   '; 'b    a'
+                item_strip = item.strip().split(' ')
+                if len(item_strip) is 1 and item_strip[0]:
                     pass
                 else:
                     print('intek-sh: export:' +
@@ -80,10 +86,17 @@ class Shell:
     def unset(self):
         try:
             for key in self.user_input[1:]:
-                del os.environ[key]
-        # catch if key not exist in os.environ
-        except KeyError:
-            pass
+                # handle the case ''; '   '; 'b    a'
+                key_strip = key.strip().split(' ')
+                if len(key_strip) is 1 and key_strip[0]:
+                    try:
+                        del environ[key]
+                    # catch if key not an environ variables
+                    except KeyError:
+                        pass
+                else:
+                    print('intek-sh: unset:' +
+                          ' `{}\': not a valid identifier'.format(key))
         # catch if no execute permission on key
         except Exception:
             print('intek-sh: unset:' +
@@ -93,14 +106,14 @@ class Shell:
     def cd(self):
         try:
             if len(self.user_input) is 1:
-                dir_path = os.environ['HOME']
+                dir_path = environ['HOME']
             elif self.user_input[1] is '.':
                 pass
             elif self.user_input[1] is '..':
-                dir_path = os.path.dirname(os.getcwd())
+                dir_path = dirname(getcwd())
             else:
-                dir_path = os.getcwd() + '/{}'.format(self.user_input[1])
-            os.chdir(dir_path)
+                dir_path = getcwd() + '/{}'.format(self.user_input[1])
+            chdir(dir_path)
         # catch when variable HOME doesn't have value
         except KeyError:
             print('intek-sh: cd: HOME not set')
@@ -125,38 +138,33 @@ class Shell:
     # run the executable file
     def run_file(self, command):
         try:
-            # open and run the content of the file
-            file_name = command[2:]
-            with open(file_name, 'r') as file:
-                content = file.read()
-                exec(content)
-        # catch if doesn't have execute permission on the file
+            # run the file
+            run(self.user_input)
+        # catch if no execute permission on the file
         except PermissionError:
-            print('intek-sh: {input[0][2:]}: Permission ' +
-                  'denied'.format(command[2:]))
+            print('intek-sh: {}: Permission denied'.format(command))
         # catch if the file doesn't exist
         except FileNotFoundError:
-            print('intek-sh:' +
-                  ' {}: No such file or directory'.format(command[2:]))
+            print('intek-sh: {}: No such file or directory'.format(command))
+        # catch if file is not an executable file
+        except OSError:
+            pass
 
-    # check if the file is an executable external binaries
+    # run the external binaries
     def run_binary(self, command):
-        exist = False
         try:
-            # check if the command is in the paths indicated by variable PATH
-            for path in os.environ['PATH'].split(':'):
-                if os.path.exists(path + '/' + command):
-                    run(self.user_input)
-                    exist = True
-                    break
-            # catch if the command doesn't exist at all
-            if not exist:
-                print('intek-sh: {}: command not found'.format(command))
+            # get paths to external binaries indicated by variable PATH
+            paths = environ['PATH'].split(':')
+            # check if the command is in paths
+            if (exists(path + '/' + command) for path in paths):
+                run(self.user_input)
+        # catch if the command doesn't exist
+        except FileNotFoundError:
+            print('intek-sh: {}: command not found'.format(command))
         # catch if PATH variable doesn't exist
         except KeyError:
-            print('intek-sh:' +
-                  ' {}: No such file or directory'.format(command))
-        # catch if doesn't have execute permission on the command
+            print('intek-sh: {}: No such file or directory'.format(command))
+        # catch if no execute permission on the command
         except PermissionError:
             print('intek-sh: {}: Permission denied'.format(command))
 
