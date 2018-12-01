@@ -72,7 +72,7 @@ class Shell:
                     environ[items[0]] = items[1]
                 else:
                     print('intek-sh: export:' +
-                          ' `{}\': not a valid identifier'.format(item))
+                          ' `%s\': not a valid identifier' % (item))
             else:
                 # handle the case ''; '   '; 'b    a'
                 item_strip = item.strip().split(' ')
@@ -80,12 +80,12 @@ class Shell:
                     pass
                 else:
                     print('intek-sh: export:' +
-                          ' `{}\': not a valid identifier'.format(item))
+                          ' `%s\': not a valid identifier' % (item))
 
     # unset feature
     def unset(self):
-        try:
-            for key in self.user_input[1:]:
+        for key in self.user_input[1:]:
+            try:
                 # handle the case ''; '   '; 'b    a'
                 key_strip = key.strip().split(' ')
                 if len(key_strip) is 1 and key_strip[0]:
@@ -96,11 +96,10 @@ class Shell:
                         pass
                 else:
                     print('intek-sh: unset:' +
-                          ' `{}\': not a valid identifier'.format(key))
-        # catch if no execute permission on key
-        except Exception:
-            print('intek-sh: unset:' +
-                  ' {}: cannot unset: readonly variable'.format(key))
+                          ' `%s\': not a valid identifier' % (key))
+            except OSError:
+                print('intek-sh: unset:' +
+                      ' `%s\': not a valid identifier' % (key))
 
     # cd feature
     def cd(self):
@@ -112,7 +111,7 @@ class Shell:
             elif self.user_input[1] is '..':
                 dir_path = dirname(getcwd())
             else:
-                dir_path = getcwd() + '/{}'.format(self.user_input[1])
+                dir_path = getcwd() + '/%s' % (self.user_input[1])
             chdir(dir_path)
         # catch when variable HOME doesn't have value
         except KeyError:
@@ -120,11 +119,11 @@ class Shell:
         # catch when destination not exist
         except FileNotFoundError:
             print('intek-sh: cd:' +
-                  ' {}: No such file or directory'.format(self.user_input[1]))
+                  ' %s: No such file or directory' % (self.user_input[1]))
         # catch when destination is not a directory
         except NotADirectoryError:
             print('intek-sh: cd:' +
-                  ' {}: Not a directory'.format(self.user_input[1]))
+                  ' %s: Not a directory' % (self.user_input[1]))
 
     # execute external command
     def do_external(self, command):
@@ -138,14 +137,18 @@ class Shell:
     # run the executable file
     def run_file(self, command):
         try:
-            # run the file
-            run(self.user_input)
+            # catch if only ./ is prompted in
+            if command == './':
+                print('intek-sh: ./: Is a directory')
+            else:
+                # run the file
+                run(self.user_input)
         # catch if no execute permission on the file
         except PermissionError:
-            print('intek-sh: {}: Permission denied'.format(command))
+            print('intek-sh: %s: Permission denied' % (command))
         # catch if the file doesn't exist
         except FileNotFoundError:
-            print('intek-sh: {}: No such file or directory'.format(command))
+            print('intek-sh: %s: No such file or directory' % (command))
         # catch if file is not an executable file
         except OSError:
             pass
@@ -160,13 +163,13 @@ class Shell:
                 run(self.user_input)
         # catch if the command doesn't exist
         except FileNotFoundError:
-            print('intek-sh: {}: command not found'.format(command))
+            print('intek-sh: %s: command not found' % (command))
         # catch if PATH variable doesn't exist
         except KeyError:
-            print('intek-sh: {}: No such file or directory'.format(command))
+            print('intek-sh: %s: No such file or directory' % (command))
         # catch if no execute permission on the command
         except PermissionError:
-            print('intek-sh: {}: Permission denied'.format(command))
+            print('intek-sh: %s: Permission denied' % (command))
 
 
 # Run the Shell
