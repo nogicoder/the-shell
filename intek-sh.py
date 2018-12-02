@@ -7,6 +7,8 @@ from os.path import exists
 from os.path import dirname
 from shlex import split
 from subprocess import run
+from string import ascii_lowercase
+from string import ascii_uppercase
 
 
 '''----------------------Create a Shell Object-----------------------------'''
@@ -65,11 +67,20 @@ class Shell:
 
     # export feature
     def export(self):
+        ascii_list = ascii_lowercase + ascii_uppercase
         for item in self.user_input[1:]:
+            flag = True
             if '=' in item:
                 items = item.split('=', 1)
                 if len(items) is 2 and items[0]:
-                    environ[items[0]] = items[1]
+                    for letter in items[0]:
+                        if letter not in ascii_list:
+                            flag = False
+                    if flag:
+                        environ[items[0]] = items[1]
+                    else:
+                        print('intek-sh: export:' +
+                              ' `%s\': not a valid identifier' % (item))
                 else:
                     print('intek-sh: export:' +
                           ' `%s\': not a valid identifier' % (item))
@@ -77,7 +88,14 @@ class Shell:
                 # handle the case ''; '   '; 'b    a'
                 item_strip = item.strip().split(' ')
                 if len(item_strip) is 1 and item_strip[0]:
-                    pass
+                    for letter in item_strip[0]:
+                        if letter not in ascii_list:
+                            flag = False
+                    if flag:
+                        pass
+                    else:
+                        print('intek-sh: export:' +
+                              ' `%s\': not a valid identifier' % (item))
                 else:
                     print('intek-sh: export:' +
                           ' `%s\': not a valid identifier' % (item))
