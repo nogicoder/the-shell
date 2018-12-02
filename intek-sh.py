@@ -17,6 +17,7 @@ from string import ascii_uppercase
 class Shell:
     # Initialize Shell
     def __init__(self):
+        self.ascii_list = ascii_lowercase + ascii_uppercase
         # list of built-in features
         self.builtins = ['exit', 'printenv', 'export', 'unset', 'cd']
         # run the REPL
@@ -67,14 +68,13 @@ class Shell:
 
     # export feature
     def export(self):
-        ascii_list = ascii_lowercase + ascii_uppercase
         for item in self.user_input[1:]:
             flag = True
             if '=' in item:
                 items = item.split('=', 1)
                 if len(items) is 2 and items[0]:
                     for letter in items[0]:
-                        if letter not in ascii_list:
+                        if letter not in self.ascii_list:
                             flag = False
                     if flag:
                         environ[items[0]] = items[1]
@@ -89,7 +89,7 @@ class Shell:
                 item_strip = item.strip().split(' ')
                 if len(item_strip) is 1 and item_strip[0]:
                     for letter in item_strip[0]:
-                        if letter not in ascii_list:
+                        if letter not in self.ascii_list:
                             flag = False
                     if flag:
                         pass
@@ -103,15 +103,23 @@ class Shell:
     # unset feature
     def unset(self):
         for key in self.user_input[1:]:
+            flag = True
             try:
                 # handle the case ''; '   '; 'b    a'
                 key_strip = key.strip().split(' ')
                 if len(key_strip) is 1 and key_strip[0]:
-                    try:
-                        del environ[key]
-                    # catch if key not an environ variables
-                    except KeyError:
-                        pass
+                    for letter in key_strip[0]:
+                        if letter not in self.ascii_list:
+                            flag = False
+                    if flag:
+                        try:
+                            del environ[key]
+                        # catch if key not an environ variables
+                        except KeyError:
+                            pass
+                    else:
+                        print('intek-sh: unset:' +
+                              ' `%s\': not a valid identifier' % (key))
                 else:
                     print('intek-sh: unset:' +
                           ' `%s\': not a valid identifier' % (key))
