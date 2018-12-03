@@ -19,7 +19,8 @@ class Shell:
             # get inputs from user as a list
             self.inp = input('intek-sh$ ')
             self.user_input = split(self.inp, posix=True)
-            if self.inp is not '':
+
+            if self.inp is not '' and not self.inp.startswith('!'):
                 # write history file
                 self.write_history(self.inp)
             try:                
@@ -27,6 +28,9 @@ class Shell:
                 # check if command is a built-in
                 if command in self.builtins:
                     self.do_builtin(command)
+                # check if command is '!*'
+                elif command.startswith('!'):
+                    self.do_exclamation(command)
                 # if command is not a built-in
                 else:
                     self.do_external(command)
@@ -240,6 +244,35 @@ class Shell:
                     print('  ' + line.strip())
         except ValueError:
             print('intek-sh: history: %s: numeric argument required' % (n))
+    
+    def do_exclamation(self, command):
+        # print(self.user_input)
+        # print(command)
+        numline = int(command[1:])
+        with open('history.txt','r') as history_file:
+            content = history_file.readlines()
+            line_content = content[numline - 1].split('\t')[1].strip()
+            print(line_content)
+
+            line_contents = split(line_content, posix=True)
+            if line_content is not '':
+                # write history file
+                self.write_history(line_content)
+            try:                
+                command = line_contents[0]
+                # check if command is a built-in
+                if command in self.builtins:
+                    self.do_builtin(command)
+                # check if command is '!*'
+                elif command.startswith('!'):
+                    self.do_exclamation(command)
+                # if command is not a built-in
+                else:
+                    self.do_external(command)
+            # catch EOFError when no input is prompted in
+            # catch IndexError when nothing is input in (empty input list)
+            except IndexError:
+                pass
 
 
 # Run the Shell
