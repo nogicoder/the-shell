@@ -24,7 +24,7 @@ class Shell:
         loop = True
         while loop:
             # get inputs from user as a list
-            self.user_input = split(input('intek-sh$ '), posix=True)
+            self.user_input = self.handle_input()
             try:
                 command = self.user_input[0]
                 # check if command is a built-in
@@ -39,6 +39,11 @@ class Shell:
             # catch IndexError when nothing is input in (empty input list)
             except IndexError:
                 pass
+
+    # Handling input to match each feature's requirement
+    def handle_input(self):
+        user_input = split(input('intek-sh$ '), posix=True)
+        return user_input
 
     # execute the function with the same name as the command
     def do_builtin(self, command):
