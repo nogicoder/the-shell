@@ -7,7 +7,8 @@ from os.path import exists
 from os.path import dirname
 from shlex import split
 from subprocess import run
-
+from globbing import *
+from path_expansions import *
 
 '''----------------------Create a Shell Object-----------------------------'''
 
@@ -21,8 +22,9 @@ class Shell:
         loop = True
         while loop:
             # get inputs from user as a list
-            self.user_input = split(input('intek-sh$ '), posix=True)
+            self.user_input = self.handle_input()
             try:
+                # self.raw_input = ' '.join(self.user_input)
                 command = self.user_input[0]
                 # check if command is a built-in
                 if command in self.builtins:
@@ -36,6 +38,11 @@ class Shell:
             # catch IndexError when nothing is input in (empty input list)
             except IndexError:
                 pass
+
+    def handle_input(self):
+        inputs = split(input('intek-sh$ '), posix=True)
+        user_input = globbing(path_expans(inputs))
+        return user_input
 
     # execute the function with the same name as the command
     def do_builtin(self, command):
