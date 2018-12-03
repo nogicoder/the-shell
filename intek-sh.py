@@ -190,7 +190,7 @@ class Shell:
             # get paths to external binaries indicated by variable PATH
             paths = environ['PATH'].split(':')
             # check if the command is in paths
-            if (exists(path + '/' + command) for path in paths):
+            if command and (exists(path + '/' + command) for path in paths):
                 run(self.user_input)
         # catch if the command doesn't exist
         except FileNotFoundError:
