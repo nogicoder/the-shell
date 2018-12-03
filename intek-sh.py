@@ -1,15 +1,9 @@
 #!/usr/bin/env python3
 
-from os import chdir
-from os import getcwd
-from os import environ
-from os.path import exists
-from os.path import dirname
+from os import chdir, environ, getcwd
+from os.path import dirname, exists
 from shlex import split
 from subprocess import run
-from string import ascii_lowercase
-from string import ascii_uppercase
-
 
 '''----------------------Create a Shell Object-----------------------------'''
 
@@ -18,13 +12,17 @@ class Shell:
     # Initialize Shell
     def __init__(self):
         # list of built-in features
-        self.builtins = ['exit', 'printenv', 'export', 'unset', 'cd']
+        self.builtins = ['exit', 'printenv', 'export', 'unset', 'cd', 'history']
         # run the REPL
         loop = True
         while loop:
             # get inputs from user as a list
-            self.user_input = split(input('intek-sh$ '), posix=True)
-            try:
+            self.inp = input('intek-sh$ ')
+            self.user_input = split(self.inp, posix=True)
+            if self.inp is not '':
+                # write history file
+                self.write_history(self.inp)
+            try:                
                 command = self.user_input[0]
                 # check if command is a built-in
                 if command in self.builtins:
@@ -67,20 +65,11 @@ class Shell:
 
     # export feature
     def export(self):
-        ascii_list = ascii_lowercase + ascii_uppercase
         for item in self.user_input[1:]:
-            flag = True
             if '=' in item:
                 items = item.split('=', 1)
                 if len(items) is 2 and items[0]:
-                    for letter in items[0]:
-                        if letter not in ascii_list:
-                            flag = False
-                    if flag:
-                        environ[items[0]] = items[1]
-                    else:
-                        print('intek-sh: export:' +
-                              ' `%s\': not a valid identifier' % (item))
+                    environ[items[0]] = items[1]
                 else:
                     print('intek-sh: export:' +
                           ' `%s\': not a valid identifier' % (item))
@@ -88,14 +77,7 @@ class Shell:
                 # handle the case ''; '   '; 'b    a'
                 item_strip = item.strip().split(' ')
                 if len(item_strip) is 1 and item_strip[0]:
-                    for letter in item_strip[0]:
-                        if letter not in ascii_list:
-                            flag = False
-                    if flag:
-                        pass
-                    else:
-                        print('intek-sh: export:' +
-                              ' `%s\': not a valid identifier' % (item))
+                    pass
                 else:
                     print('intek-sh: export:' +
                           ' `%s\': not a valid identifier' % (item))
@@ -188,6 +170,76 @@ class Shell:
         # catch if no execute permission on the command
         except PermissionError:
             print('intek-sh: %s: Permission denied' % (command))
+    
+    def history(self):
+        # with only 'history' command
+        if len(self.user_input) is 1:
+            with open('history.txt', 'r') as history_file:
+                for line in history_file:
+                    print('  ' + line.strip())
+        # 'history + options' command
+        else:
+            # clear option 'history -c'
+            if '-c' in self.user_input[1:]:
+                open('history.txt', "w").close()
+            # delete option 'history -d offset'
+            elif '-d' in self.user_input[1]:
+                self.delete_history()
+            # display [n] newest history 'history [n]'
+            else:
+                # number of last lines need to print
+                n = self.user_input[1]
+                # function to print
+                self.print_newest_history(n)
+    
+    def write_history(self, inp):
+        with open("history.txt", 'a+') as history_file:
+            # when open in 'a+', offset at end of file, move to begining
+            history_file.seek(0)
+            # get the next line number
+            num_line = sum(1 for line in history_file) + 1
+            history_file.seek(0)
+            # get content of history file
+            content = history_file.readlines()
+            # check if history file is not empty
+            if num_line > 1:
+                should_write = True
+                last_line = content[-1].split('\t')
+                last_inp = last_line[1].strip()
+                # check if current input == last input, should not write
+                if inp == last_inp:
+                    should_write = False
+            # if history file is empty
+            else:
+                should_write = True
+            # write to history file
+            if should_write:
+                history_file.write(str(num_line) + '\t' + inp + '\n')
+    
+    def delete_history(self):       # not finish, buggy
+        # get the 'offset'
+        offset_index = self.user_input.index('-d') + 1
+        offset = self.user_input[offset_index]
+        with open('history.txt', 'r+') as history_file:
+            num_line = 1
+            content = history_file.readlines()
+            history_file.seek(0)
+            for line in content:
+                line = line.strip().split('\t')
+                if not offset is line[0]:
+                    history_file.write(str(num_line) + '\t' + line[1] + '\n')
+                    num_line += 1
+    
+    def print_newest_history(self, n):
+        try:
+            with open('history.txt', 'r') as history_file:
+                # get content of history file
+                content = history_file.readlines()
+                # print n newest lines 
+                for line in content[-int(n):]:
+                    print('  ' + line.strip())
+        except ValueError:
+            print('intek-sh: history: %s: numeric argument required' % (n))
 
 
 # Run the Shell
