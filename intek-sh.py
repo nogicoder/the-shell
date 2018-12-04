@@ -21,9 +21,11 @@ class Shell:
         # run the REPL
         loop = True
         while loop:
-            # get inputs from user as a list
-            self.user_input = self.handle_input()
             try:
+                # get inputs from user as a list
+                inputs = split(input('intek-sh$ '), posix=True)
+                self.user_input = self.handle_input(inputs)
+                
                 # self.raw_input = ' '.join(self.user_input)
                 command = self.user_input[0]
                 # check if command is a built-in
@@ -38,9 +40,10 @@ class Shell:
             # catch IndexError when nothing is input in (empty input list)
             except IndexError:
                 pass
+            except ValueError:
+                pass
 
-    def handle_input(self):
-        inputs = split(input('intek-sh$ '), posix=True)
+    def handle_input(self, inputs):
         user_input = globbing(path_expans(inputs))
         return user_input
 
