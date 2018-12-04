@@ -23,7 +23,6 @@ class Shell:
         while loop:
 
             self.handle_input()
-            write_history(self.inp)
             self.do_command(self.user_input)
 
     # Handling input to match each feature's requirement
@@ -32,6 +31,7 @@ class Shell:
         self.user_input = split(self.inp, posix=True)
 
     def do_command(self, user_input):
+        write_history(self.inp)
         try:
             command = user_input[0]
             # check if command is a built-in
@@ -40,9 +40,11 @@ class Shell:
             # check if command is '!*'
             elif command.startswith('!'):
                 self.do_exclamation(command)
+                self.should_write_history = False
             # if command is not a built-in
             else:
                 self.do_external(command, user_input)
+
         # catch EOFError when no input is prompted in
         except EOFError:
             pass
@@ -181,18 +183,24 @@ class Shell:
     # '!' command, ralating to history
     def do_exclamation(self, command):
         try:
-            numline = int(command[1:])
-            with open('history.txt','r') as history_file:
-                content = history_file.readlines()
-                line_content = content[numline - 1].split('\t')[1].strip()
-                line_contents = split(line_content, posix=True)
+            if command == '!!':
+                numline = 0
+            else:
+                numline = int(command[1:])
 
-                print(line_content)
-                write_history(line_content)
-                self.do_command(line_contents)
-                
+            self.do_past_input(numline)
+
         except (IndexError, ValueError):
             print('intek-sh: %s: event not found' % (command))
+    
+    def do_past_input(self, numline):
+        with open('history.txt','r') as history_file:
+            content = history_file.readlines()
+            line_content = content[numline - 1].split('\t')[1].strip()
+            line_contents = split(line_content, posix=True)
+
+            print(line_content)
+            self.do_command(line_contents)
 
     # execute external command
     def do_external(self, command, user_input):

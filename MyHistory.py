@@ -3,6 +3,7 @@ from shlex import split
 def write_history(inp):
     if inp is not '':
         with open("history.txt", 'a+') as history_file:
+            should_write = True
             # get line number
             history_file.seek(0)
             num_line = sum(1 for line in history_file) + 1
@@ -11,16 +12,13 @@ def write_history(inp):
             content = history_file.readlines()
             # check if history file is not empty
             if num_line > 1:
-                should_write = True
+                
                 last_line = content[-1].split('\t')
                 last_inp = last_line[1].strip()
                 # input duplicate, should not write
-                if inp == last_inp:
+                if inp == last_inp or inp.startswith('!'):
                     should_write = False
-            # if history file is empty
-            else:
-                should_write = True
-            # write to history file
+                    
             if should_write:
                 history_file.write(str(num_line) + '\t' + inp + '\n')
 
