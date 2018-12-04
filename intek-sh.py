@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 
-from os import chdir
-from os import getcwd
-from os import environ
-from os.path import exists
-from os.path import dirname
+from os import chdir, environ, getcwd
+from os.path import dirname, exists
 from shlex import split
 from subprocess import run
 from string import ascii_lowercase
@@ -82,7 +79,6 @@ class Shell:
     # export feature
     def export(self):
         for item in self.user_input[1:]:
-            flag = True
             if '=' in item:
                 items = item.split('=', 1)
                 if len(items) is 2 and items[0]:
@@ -181,6 +177,7 @@ class Shell:
                 n = self.user_input[1]
                 # function to print
                 print_newest_history(n)
+
     # '!' command, ralating to history
     def do_exclamation(self, command):
         try:
@@ -242,7 +239,7 @@ class Shell:
         # catch if no execute permission on the command
         except PermissionError:
             print('intek-sh: %s: Permission denied' % (command))
-
+ 
 # Run the Shell
 if __name__ == '__main__':
     Shell()
