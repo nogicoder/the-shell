@@ -161,7 +161,7 @@ class Shell:
         except NotADirectoryError:
             print('intek-sh: cd:' +
                   ' %s: Not a directory' % (self.user_input[1]))
-    
+
     def history(self):
         # with only 'history' command
         if len(self.user_input) is 1:
@@ -192,9 +192,9 @@ class Shell:
 
         except (IndexError, ValueError):
             print('intek-sh: %s: event not found' % (command))
-    
+
     def do_past_input(self, numline):
-        with open('history.txt','r') as history_file:
+        with open('history.txt', 'r') as history_file:
             content = history_file.readlines()
             line_content = content[numline - 1].split('\t')[1].strip()
             line_contents = split(line_content, posix=True)
@@ -247,7 +247,8 @@ class Shell:
         # catch if no execute permission on the command
         except PermissionError:
             print('intek-sh: %s: Permission denied' % (command))
- 
+
+
 # Run the Shell
 if __name__ == '__main__':
     Shell()
