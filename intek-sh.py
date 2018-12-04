@@ -47,13 +47,9 @@ class Shell:
             except ValueError:
                 pass
 
+    # Handling input to match each feature's requirement
     def handle_input(self, inputs):
         user_input = globbing(path_expans(inputs))
-        return user_input
-
-    # Handling input to match each feature's requirement
-    def handle_input(self):
-        user_input = split(input('intek-sh$ '), posix=True)
         return user_input
 
     # execute the function with the same name as the command
