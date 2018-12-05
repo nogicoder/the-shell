@@ -9,10 +9,10 @@ from shlex import split
 from subprocess import run
 from string import ascii_lowercase
 from string import ascii_uppercase
+from signal_handling import handle_signal
 
 
 '''----------------------Create a Shell Object-----------------------------'''
-
 
 class Shell:
     # Initialize Shell
@@ -23,23 +23,28 @@ class Shell:
         # run the REPL
         loop = True
         while loop:
-            # get inputs from user as a list
-            self.user_input = self.handle_input()
             try:
-                command = self.user_input[0]
-                # check if command is a built-in
-                if command in self.builtins:
-                    self.do_builtin(command)
-                # if command is not a built-in
-                else:
-                    self.do_external(command)
-            # catch EOFError when no input is prompted in
-            except EOFError:
-                break
-            # catch IndexError when nothing is input in (empty input list)
-            except IndexError:
+                handle_signal()
+                # get inputs from user as a list
+                self.user_input = self.handle_input()
+                try:
+                    command = self.user_input[0]
+                    # check if command is a built-in
+                    if command in self.builtins:
+                        self.do_builtin(command)
+                    # if command is not a built-in
+                    else:
+                        self.do_external(command)
+                # catch EOFError when no input is prompted in
+                except EOFError:
+                    break
+                # catch IndexError when nothing is input in (empty input list)
+                except IndexError:
+                    pass
+            except KeyboardInterrupt:
+                print('')
                 pass
-
+                
     # Handling input to match each feature's requirement
     def handle_input(self):
         user_input = split(input('intek-sh$ '), posix=True)
@@ -190,7 +195,7 @@ class Shell:
             # get paths to external binaries indicated by variable PATH
             paths = environ['PATH'].split(':')
             # check if the command is in paths
-            if (exists(path + '/' + command) for path in paths):
+            if command and (exists(path + '/' + command) for path in paths):
                 run(self.user_input)
         # catch if the command doesn't exist
         except FileNotFoundError:
