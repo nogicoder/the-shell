@@ -42,7 +42,7 @@ class Shell:
 
     # Handling input to match each feature's requirement
     def handle_input(self):
-        user_input = split(input('intek-sh$ '), posix=True)
+        user_input = split(input('\x1b[1m\033[92mintek-sh$\033[0m\x1b[1m\x1b[0m '), posix=True)
         return user_input
 
     # execute the function with the same name as the command
