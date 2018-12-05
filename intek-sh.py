@@ -2,11 +2,14 @@
 
 from os import chdir, environ, getcwd
 from os.path import dirname, exists
-from shlex import split
+from shlex import split, quote
 from subprocess import run
 from string import ascii_lowercase
 from string import ascii_uppercase
 from MyHistory import write_history, print_newest_history
+from globbing import globbing
+from path_expansions import path_expans
+import re
 
 
 '''----------------------Create a Shell Object-----------------------------'''
@@ -28,7 +31,22 @@ class Shell:
     # Handling input to match each feature's requirement
     def handle_input(self):
         self.inp = input('intek-sh$ ')
-        self.user_input = split(self.inp, posix=True)
+        self.user_input = split(self.inp, posix=False)    
+        self.user_input = globbing(path_expans(self.user_input))
+        
+
+    # def quote(self, inputs):
+    #     """Return a shell-escaped version of the string *s*."""
+    #     _find_unsafe = re.compile(r'[^\w@%+=:,./-]', re.ASCII).search
+    #     if not inputs:
+    #         return "''"
+    #     if _find_unsafe(inputs) is None:
+    #         return inputs
+    #     inputs = globbing(path_expans(inputs))
+
+    #     # use single quotes, and put single quotes into double quotes
+    #     # the string $'b is then quoted as '$'"'"'b'
+    #     return "'" + inputs.replace("'", "'\"'\"'") + "'"
 
     def do_command(self, user_input):
         write_history(self.inp)
@@ -38,7 +56,7 @@ class Shell:
             if command in self.builtins:
                 self.do_builtin(command)
             # check if command is '!*'
-            elif command.startswith('!'):
+            elif command.startswith('!') and len(command) > 1:
                 self.do_exclamation(command)
                 self.should_write_history = False
             # if command is not a built-in
