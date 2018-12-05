@@ -44,6 +44,9 @@ class Shell:
         if '$?' in self.user_input:
             pos = self.user_input.index('$?')
             self.user_input[pos] = str(self.exit_code)
+        if '${?}' in self.user_input:
+            pos = self.user_input.index('${?}')
+            self.user_input[pos] = str(self.exit_code)
 
     # execute the function with the same name as the command
     def do_builtin(self, command):
