@@ -5,8 +5,8 @@ from os import path
 
 
 def glob_basic(arg):
-    value = glob(arg)
-    return sorted(value) if value else [arg]
+        value = glob(arg)
+        return sorted(value) if value else [arg]
 
 
 def get_match_dir(dirs, pat):
@@ -19,7 +19,6 @@ def get_match_dir(dirs, pat):
 
 def find_in_root(root, base, arg):
     roots = glob(arg)
-    print(roots)
     if roots:
         child_dirs = []
         for dir in roots:
@@ -45,15 +44,17 @@ def get_hidden_dir(arg):
 
 
 def globbing_one(arg):
-    if arg.startswith('.*'):
-        value = get_hidden_dir(arg)
-    else:
-        value = glob_basic(arg)
-    return value
+    try:
+        if arg.startswith('.*'):
+            return get_hidden_dir(arg)
+        else:
+            return glob_basic(arg)
+    except Exception:
+        return [arg]
 
 
 def globbing(inp):
-    globbed= []
+    globbed = []
     try:
         for arg in inp:
             if any(x in arg for x in ['*', '?', '[', ']']):
@@ -62,7 +63,7 @@ def globbing(inp):
                 globbed.append(arg)
         return globbed
     except Exception:
-        print('Case not included')
+        print('Globbing: Case not included')
 
 
 if __name__ == '__main__':
