@@ -9,6 +9,8 @@ from shlex import split
 from subprocess import run
 from string import ascii_lowercase
 from string import ascii_uppercase
+from globbing import *
+from path_expansions import *
 
 
 '''----------------------Create a Shell Object-----------------------------'''
@@ -23,9 +25,11 @@ class Shell:
         # run the REPL
         loop = True
         while loop:
-            # get inputs from user as a list
-            self.user_input = self.handle_input()
             try:
+                # get inputs from user as a list
+                inp = input('\x1b[1m\033[92mintek-sh$\033[0m\x1b[1m\x1b[0m ')
+                inputs = split(inp, posix=True)
+                self.user_input = self.handle_input(inputs)
                 command = self.user_input[0]
                 # check if command is a built-in
                 if command in self.builtins:
@@ -39,10 +43,12 @@ class Shell:
             # catch IndexError when nothing is input in (empty input list)
             except IndexError:
                 pass
+            except ValueError:
+                pass
 
     # Handling input to match each feature's requirement
-    def handle_input(self):
-        user_input = split(input('\x1b[1m\033[92mintek-sh$\033[0m\x1b[1m\x1b[0m '), posix=True)
+    def handle_input(self, inputs):
+        user_input = globbing(path_expans(inputs))
         return user_input
 
     # execute the function with the same name as the command
