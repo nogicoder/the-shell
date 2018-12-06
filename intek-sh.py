@@ -54,6 +54,7 @@ class Shell:
             except ValueError:
                 pass
             except KeyboardInterrupt:
+                self.exit_code = 130
                 print('')
                 pass
 
