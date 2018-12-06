@@ -54,7 +54,7 @@ def globbing_one(arg):
 
 
 def globbing(inp):
-    globbed= []
+    globbed = []
     try:
         for arg in inp:
             if any(x in arg for x in ['*', '?', '[', ']']):

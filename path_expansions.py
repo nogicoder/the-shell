@@ -29,7 +29,7 @@ def strip_var(var):
     i = var.index('$')
     j = i + 1
     while j < len(var) and var[j].isalnum() and var[j] != ' ':
-        j+=1 
+        j += 1
     return var[:i] + var[j:]
 
 
