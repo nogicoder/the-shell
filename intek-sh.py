@@ -96,7 +96,7 @@ class Shell:
             else:
                 self.do_external(command)
             # if exit_code is not what the condition expects then return
-            if not self.exit_code != expected:
+            if (not self.exit_code) != expected:
                 return self.exit_code
             else:
                 self.logical_operator(right)
