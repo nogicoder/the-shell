@@ -22,6 +22,7 @@ class Shell:
         self.ascii_list = ascii_lowercase + ascii_uppercase
         # list of built-in features
         self.builtins = ['exit', 'printenv', 'export', 'unset', 'cd']
+        self.exit_code = 0
         # run the REPL
         loop = True
         while loop:
@@ -46,8 +47,18 @@ class Shell:
             except ValueError:
                 pass
 
+    # convert $? to exit code
+    def handle_exit_code(self, inputs):
+        if '$?' in inputs:
+            pos = inputs.index('$?')
+            inputs[pos] = str(self.exit_code)
+        if '${?}' in inputs:
+            pos = inputs.index('${?}')
+            inputs[pos] = str(self.exit_code)
+
     # Handling input to match each feature's requirement
     def handle_input(self, inputs):
+        self.handle_exit_code(inputs)
         user_input = globbing(path_expans(inputs))
         return user_input
 
@@ -58,12 +69,20 @@ class Shell:
     # exit feature
     def exit(self):
         print('exit')
-        if len(self.user_input) is 2 and not self.user_input[1].isdigit():
-            print('intek-sh: exit:')
-        exit()
+        if len(self.user_input) > 1 and not self.user_input[1].isdigit():
+            print('intek-sh: exit: ' + self.user_input[1] +
+                  ': numeric argument required')
+            exit(2)
+        elif len(self.user_input) > 2:
+            self.exit_code = 1
+            print('intek-sh: exit: too many arguments')
+        else:
+            if len(self.user_input) > 1:
+                self.exit_code = int(self.user_input[1])
+            exit(self.exit_code)
 
     # printenv feature
-    def printenv(self):
+    def printenv(self, flag=False):
         # if no argument is provided
         if len(self.user_input) is 1:
             for key in environ:
@@ -75,10 +94,15 @@ class Shell:
                     print(environ[key])
                 # catch KeyError when an argument not exists in environ
                 except KeyError:
+                    flag = True
                     pass
+        if not flag:
+            self.exit_code = 0
+        elif flag:
+            self.exit_code = 1
 
     # export feature
-    def export(self):
+    def export(self, flag=False):
         for item in self.user_input[1:]:
             flag = True
             if '=' in item:
@@ -95,6 +119,7 @@ class Shell:
                 else:
                     print('intek-sh: export:' +
                           ' `%s\': not a valid identifier' % (item))
+                    flag = True
             else:
                 # handle the case ''; '   '; 'b    a'
                 item_strip = item.strip().split(' ')
@@ -110,9 +135,14 @@ class Shell:
                 else:
                     print('intek-sh: export:' +
                           ' `%s\': not a valid identifier' % (item))
+                    flag = True
+        if not flag:
+            self.exit_code = 0
+        elif flag:
+            self.exit_code = 1
 
     # unset feature
-    def unset(self):
+    def unset(self, flag=False):
         for key in self.user_input[1:]:
             flag = True
             try:
@@ -134,12 +164,19 @@ class Shell:
                 else:
                     print('intek-sh: unset:' +
                           ' `%s\': not a valid identifier' % (key))
+                    flag = True
+            # catch if no execute permission on key
             except OSError:
                 print('intek-sh: unset:' +
                       ' `%s\': not a valid identifier' % (key))
+                flag = True
+        if not flag:
+            self.exit_code = 0
+        elif flag:
+            self.exit_code = 1
 
     # cd feature
-    def cd(self):
+    def cd(self, flag=False):
         try:
             if len(self.user_input) is 1:
                 dir_path = environ['HOME']
@@ -153,14 +190,21 @@ class Shell:
         # catch when variable HOME doesn't have value
         except KeyError:
             print('intek-sh: cd: HOME not set')
+            flag = True
         # catch when destination not exist
         except FileNotFoundError:
             print('intek-sh: cd:' +
                   ' %s: No such file or directory' % (self.user_input[1]))
+            flag = True
         # catch when destination is not a directory
         except NotADirectoryError:
             print('intek-sh: cd:' +
                   ' %s: Not a directory' % (self.user_input[1]))
+            flag = True
+        if not flag:
+            self.exit_code = 0
+        elif flag:
+            self.exit_code = 1
 
     # execute external command
     def do_external(self, command):
@@ -177,17 +221,21 @@ class Shell:
             # catch if only ./ is prompted in
             if command == './':
                 print('intek-sh: ./: Is a directory')
+                self.exit_code = 126
             else:
                 # run the file
-                run(self.user_input)
+                self.exit_code = run(self.user_input).returncode
         # catch if no execute permission on the file
         except PermissionError:
             print('intek-sh: %s: Permission denied' % (command))
+            self.exit_code = 126
         # catch if the file doesn't exist
         except FileNotFoundError:
             print('intek-sh: %s: No such file or directory' % (command))
+            self.exit_code = 127
         # catch if file is not an executable file
         except OSError:
+            self.exit_code = 0
             pass
 
     # run the external binaries
@@ -197,16 +245,19 @@ class Shell:
             paths = environ['PATH'].split(':')
             # check if the command is in paths
             if command and (exists(path + '/' + command) for path in paths):
-                run(self.user_input)
+                self.exit_code = run(self.user_input).returncode
         # catch if the command doesn't exist
         except FileNotFoundError:
             print('intek-sh: %s: command not found' % (command))
+            self.exit_code = 127
         # catch if PATH variable doesn't exist
         except KeyError:
             print('intek-sh: %s: No such file or directory' % (command))
+            self.exit_code = 127
         # catch if no execute permission on the command
         except PermissionError:
             print('intek-sh: %s: Permission denied' % (command))
+            self.exit_code = 126
 
 
 # Run the Shell
