@@ -11,6 +11,7 @@ from string import ascii_lowercase
 from string import ascii_uppercase
 from globbing import *
 from path_expansions import *
+from signal_handling import handle_signal
 
 
 '''----------------------Create a Shell Object-----------------------------'''
@@ -27,6 +28,7 @@ class Shell:
         loop = True
         while loop:
             try:
+                handle_signal()
                 # get inputs from user as a list
                 inp = input('\x1b[1m\033[92mintek-sh$\033[0m\x1b[1m\x1b[0m ')
                 inputs = split(inp, posix=True)
@@ -50,6 +52,9 @@ class Shell:
             except IndexError:
                 pass
             except ValueError:
+                pass
+            except KeyboardInterrupt:
+                print('')
                 pass
 
     # convert $? to exit code
