@@ -50,6 +50,34 @@ class Shell:
             pos = self.user_input.index('$?')
             self.user_input[pos] = str(self.exit_code)
 
+    def check_operator(self, inputs):
+        flag = False
+        for char in split(inputs, posix=True):
+            if char in ['&&', '||']:
+                flag = True
+        if flag:
+            if '&&' in inputs and '||' in inputs:
+                pos1 = inputs.index('&&', 1)
+                pos2 = inputs.index('||', 1)
+                # if the first logical operator is &&
+                if pos1 < pos2:
+                    operator = '&&'
+                    inputs = inputs.split('&&', 1)
+                # if the first logical operator is ||
+                else:
+                    operator = '||'
+                    inputs = inputs.split('||', 1)
+            # if only && in inputs
+            elif '&&' in inputs and '||' not in inputs:
+                operator = '&&'
+                inputs = inputs.split('&&', 1)
+            # if only || in inputs
+            elif '||' in inputs and '&&' not in inputs:
+                operator = '||'
+                inputs = inputs.split('||', 1)
+            return operator + inputs[1]
+        return flag
+
     # logical operator handling feature
     def logical_operator(self, inputs):
         # base case for recursion - if no logical operator in inputs
@@ -69,26 +97,22 @@ class Shell:
                 pos2 = inputs.index('||', 1)
                 # if the first logical operator is &&
                 if pos1 < pos2:
-                    left = inputs[:pos1 - 1]
-                    right = inputs[pos1 + 3:]
+                    inputs = inputs.split('&&', 1)
                     expected = True
                 # if the first logical operator is ||
                 else:
-                    left = inputs[:pos2 - 1]
-                    right = inputs[pos2 + 3:]
+                    inputs = inputs.split('||', 1)
                     expected = False
             # if only && in inputs
             elif '&&' in inputs and '||' not in inputs:
-                pos1 = inputs.index('&&', 1)
-                left = inputs[:pos1 - 1]
-                right = inputs[pos1 + 3:]
+                inputs = inputs.split('&&', 1)
                 expected = True
             # if only || in inputs
             elif '||' in inputs and '&&' not in inputs:
-                pos2 = inputs.index('||', 1)
-                left = inputs[:pos2 - 1]
-                right = inputs[pos2 + 3:]
+                inputs = inputs.split('||', 1)
                 expected = False
+            left = inputs[0]
+            right = inputs[1]
             self.user_input = split(left, posix=True)
             command = self.user_input[0]
             if command in self.builtins:
@@ -96,8 +120,13 @@ class Shell:
             else:
                 self.do_external(command)
             # if exit_code is not what the condition expects then return
-            if not self.exit_code != expected:
-                return self.exit_code
+            if (not self.exit_code) != expected:
+                if self.check_operator(right):
+                    right = self.check_operator(right)
+                    result = str(not self.exit_code) + right
+                    self.logical_operator(result)
+                else:
+                    return self.exit_code
             else:
                 self.logical_operator(right)
 
@@ -227,6 +256,10 @@ class Shell:
         # if command is an executable file
         if command.startswith('./'):
             self.run_file(command)
+        elif command is False:
+            self.exit_code = 1
+        elif command is True:
+            self.exit_code = 0
         # if command is not an executable file
         else:
             self.run_binary(command)
