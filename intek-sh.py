@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 
-from subprocess import run
+from subprocess import run, Popen
 from globbing import globbing
 from shlex import split, quote
 from os.path import dirname, exists
-from os import chdir, environ, getcwd
+from os import chdir, environ, getcwd, kill
 from exit_code import handle_exit_code
 from path_expansions import path_expans
-from signal_handling import handle_signal
-from logical_operator import check_operator
 from string import ascii_lowercase, ascii_uppercase
 from history import write_history, print_newest_history
+from logical_operator import check_operator, check_valid_operator
+from signal import signal, SIGQUIT, SIGTSTP, SIGTERM, SIGINT, SIG_IGN, SIG_DFL
 
 
 '''----------------------Create a Shell Object-----------------------------'''
@@ -25,11 +25,12 @@ class Shell:
                          'unset', 'cd', 'history')
         # set initial exit_code value
         self.exit_code = 0
+        self.pid_list = []
         # run the REPL -- MAIN LOOP
         loop = True
         while loop:
             try:
-                handle_signal()
+                self.handle_signal()
                 self.user_input = self.handle_input()
                 self.execute_commands(self.user_input)
             # catch EOFError when no input is prompted in
@@ -44,6 +45,29 @@ class Shell:
                 self.exit_code = 130
                 print('')
                 pass
+            except Exception:
+                pass
+
+    def do_signal(self, signal, frame):
+        try:
+            # self.exit_code = 128 + signal
+            for item in self.pid_list:
+                if signal == 20:
+                    kill(item, 9)
+                else:
+                    kill(item, signal)
+            self.pid_list = []
+        except ProcessLookupError:
+            pass
+
+    def handle_signal(self, flag=False):
+        signal(SIGQUIT, SIG_IGN)  # -3
+        signal(SIGTSTP, SIG_IGN)  # -20
+        signal(SIGTERM, SIG_IGN)
+        if flag:
+            signal(SIGQUIT, self.do_signal)
+            signal(SIGTSTP, self.do_signal)
+            signal(SIGTERM, self.do_signal)
 
     # Handling input to match each feature's requirement
     def handle_input(self):
@@ -58,8 +82,9 @@ class Shell:
         write_history(command, raw_input)
         if user_input:
             # handle && and || separately
-            if '&&' in user_input or '||' in user_input:
-                self.logical_operator(raw_input)
+            if '&&' in raw_input or '||' in raw_input:
+                if check_valid_operator(raw_input):
+                    self.logical_operator(raw_input)
             else:
                 command = user_input[0]
                 # check if command is a built-in
@@ -340,9 +365,9 @@ class Shell:
         # if command is an executable file
         if command.startswith('./'):
             self.run_file(user_input)
-        elif command is False or command in ['false', 'False']:
+        elif command in ['false', 'False']:
             self.exit_code = 1
-        elif command is True or command == ['true', 'True']:
+        elif command in ['true', 'True']:
             self.exit_code = 0
         # if command is not an executable file
         else:
@@ -350,6 +375,7 @@ class Shell:
 
     # run the executable file
     def run_file(self, user_input):
+        self.handle_signal(True)
         command = user_input[0]
         try:
             # catch if only ./ is prompted in
@@ -358,7 +384,10 @@ class Shell:
                 self.exit_code = 126
             else:
                 # run the file
-                self.exit_code = run(user_input).returncode
+                self.child = Popen(user_input)
+                self.pid_list.append(child.pid)
+                child.wait()
+                self.exit_code = child.returncode
         # catch if no execute permission on the file
         except PermissionError:
             print('intek-sh: %s: Permission denied' % (command))
@@ -374,13 +403,23 @@ class Shell:
 
     # run the external binaries
     def run_binary(self, user_input):
+        self.handle_signal(True)
         command = user_input[0]
         try:
             # get paths to external binaries indicated by variable PATH
             paths = environ['PATH'].split(':')
             # check if the command is in paths
             if command and (exists(path + '/' + command) for path in paths):
-                self.exit_code = run(user_input).returncode
+                child = Popen(user_input)
+                self.pid_list.append(child.pid)
+                child.wait()
+                if child.returncode < 0:
+                    if child.returncode == -9:
+                        self.exit_code = 148
+                    else:
+                        self.exit_code = 128 - child.returncode
+                else:
+                    self.exit_code = child.returncode
         # catch if the command doesn't exist
         except FileNotFoundError:
             print('intek-sh: %s: command not found' % (command))
