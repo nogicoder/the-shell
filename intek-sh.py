@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 
-from os import chdir, environ, getcwd
+from os import chdir, environ, getcwd, stat
 from os.path import dirname, exists
-from shlex import split, quote
+from shlex import quote, split
+from string import ascii_lowercase, ascii_uppercase
 from subprocess import run
-from string import ascii_lowercase
-from string import ascii_uppercase
-from globbing import *
-from path_expansions import *
-from signal_handling import handle_signal
-from MyHistory import write_history, print_newest_history
 
+from globbing import globbing
+from MyHistory import print_newest_history, write_history
+from path_expansions import path_expans
+from signal_handling import handle_signal
 
 '''----------------------Create a Shell Object-----------------------------'''
 
@@ -299,7 +298,7 @@ class Shell:
                 numline = 0
             else:
                 numline = int(command[1:])
-                
+            
             self.do_past_input(numline)
 
         except (IndexError, ValueError):
