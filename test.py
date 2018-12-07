@@ -48,7 +48,7 @@ class Shell:
         user_input = split(self.inputs, posix=True)
         self.handle_exit_code(user_input)
         # list of inputs
-        self.user_input = globbing(path_expans(user_input))
+        self.user_input = globbing(path_expans(user_input)) 
 
     # convert $? to exit code
     def handle_exit_code(self, user_input):
@@ -57,35 +57,7 @@ class Shell:
             user_input[pos] = str(self.exit_code)
         if '${?}' in user_input:
             pos = user_input.index('${?}')
-            user_input[pos] = str(self.exit_code)
-
-    def check_operator(self, inputs):
-        flag = False
-        for char in split(inputs, posix=True):
-            if char in ['&&', '||']:
-                flag = True
-        if flag:
-            if '&&' in inputs and '||' in inputs:
-                pos1 = inputs.index('&&', 1)
-                pos2 = inputs.index('||', 1)
-                # if the first logical operator is &&
-                if pos1 < pos2:
-                    operator = '&&'
-                    inputs = inputs.split('&&', 1)
-                # if the first logical operator is ||
-                else:
-                    operator = '||'
-                    inputs = inputs.split('||', 1)
-            # if only && in inputs
-            elif '&&' in inputs and '||' not in inputs:
-                operator = '&&'
-                inputs = inputs.split('&&', 1)
-            # if only || in inputs
-            elif '||' in inputs and '&&' not in inputs:
-                operator = '||'
-                inputs = inputs.split('||', 1)
-            return operator + inputs[1]
-        return flag
+            user_input[pos] = str(self.exit_code)    
 
     def execute_commands(self, commands):
         raw_commands = ' '.join(commands)
@@ -107,7 +79,7 @@ class Shell:
                 else:
                     # Only this function use 'commands'
                     self.do_external(command, commands)
-
+    
     # logical operator handling feature
     def logical_operator(self, inputs):
         # base case for recursion - if no logical operator in inputs
@@ -127,22 +99,26 @@ class Shell:
                 pos2 = inputs.index('||', 1)
                 # if the first logical operator is &&
                 if pos1 < pos2:
-                    inputs = inputs.split('&&', 1)
+                    left = inputs[:pos1 - 1]
+                    right = inputs[pos1 + 3:]
                     expected = True
                 # if the first logical operator is ||
                 else:
-                    inputs = inputs.split('||', 1)
+                    left = inputs[:pos2 - 1]
+                    right = inputs[pos2 + 3:]
                     expected = False
             # if only && in inputs
             elif '&&' in inputs and '||' not in inputs:
-                inputs = inputs.split('&&', 1)
+                pos1 = inputs.index('&&', 1)
+                left = inputs[:pos1 - 1]
+                right = inputs[pos1 + 3:]
                 expected = True
             # if only || in inputs
             elif '||' in inputs and '&&' not in inputs:
-                inputs = inputs.split('||', 1)
+                pos2 = inputs.index('||', 1)
+                left = inputs[:pos2 - 1]
+                right = inputs[pos2 + 3:]
                 expected = False
-            left = inputs[0]
-            right = inputs[1]
             self.user_input = split(left, posix=True)
             command = self.user_input[0]
             if command in self.builtins:
@@ -151,12 +127,7 @@ class Shell:
                 self.do_external(command, self.user_input)
             # if exit_code is not what the condition expects then return
             if (not self.exit_code) != expected:
-                if self.check_operator(right):
-                    right = self.check_operator(right)
-                    result = str(not self.exit_code) + right
-                    self.logical_operator(result)
-                else:
-                    return self.exit_code
+                return self.exit_code
             else:
                 self.logical_operator(right)
 
@@ -328,7 +299,7 @@ class Shell:
                 numline = 0
             else:
                 numline = int(command[1:])
-
+                
             self.do_past_input(numline)
 
         except (IndexError, ValueError):
@@ -348,10 +319,6 @@ class Shell:
         # if command is an executable file
         if command.startswith('./'):
             self.run_file(command, commands)
-        elif command is False:
-            self.exit_code = 1
-        elif command is True:
-            self.exit_code = 0
         # if command is not an executable file
         else:
             self.run_binary(command, commands)

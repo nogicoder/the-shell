@@ -38,7 +38,7 @@
 *Work Schedule*
 + Phase 1: 
 # pan: globbing, path expansions - DL: 8pm 01/12 - Complete time: 
-# son: minish, quoting - DL: 8pm 01/12 - Complete time: 
+# son: minish, quoting - DL: 8pm 01/12 - Complete time: 8pm 01/12
 # mbach: minish, exit code - DL: 8pm 30/12 - Complete time: 8pm 30/12
 Note: mbach continue working on 'logical operators' - DL: 8pm 01/12 - Complete time:
 + Phase 2: 
