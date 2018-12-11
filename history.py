@@ -16,7 +16,7 @@ def write_history(command, raw_input):
             if num_line > 1:
                 last_line = content[-1].split('\t')
                 last_input = last_line[1].strip()
-                
+
                 # input duplicate, should not write
                 if raw_input == last_input or raw_input.startswith('!'):
                     should_write = False

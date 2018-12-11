@@ -45,6 +45,7 @@ def check_valid_operator(inputs, flag=True):
 
     return flag
 
+
 def check_operator(inputs):
     flag = False
     for char in split(inputs, posix=True):

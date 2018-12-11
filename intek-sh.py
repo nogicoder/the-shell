@@ -67,7 +67,6 @@ class Shell:
             signal(SIGQUIT, self.do_signal)
             signal(SIGTSTP, self.do_signal)
             signal(SIGTERM, self.do_signal)
-        
 
     # Handling input to match each feature's requirement
     def handle_input(self):
