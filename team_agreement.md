@@ -37,11 +37,18 @@
 + dynamic command completion ★★✩✩ (use tab to finish the command/ filename)
 *Work Schedule*
 + Phase 1: 
+<<<<<<< HEAD
 ## pan: globbing, path expansions - DL: 8pm 01/12 - Complete time: 
 ## son: minish, quoting - DL: 8pm 01/12 - Complete time:
 ## mbach: minish, exit code - DL: 8pm 30/12 - Complete time: 8pm 30/12
 Note: mbach continue working on 'logical operators'
 Note: nson continue working on 'history'
+=======
+# pan: globbing, path expansions - DL: 8pm 01/12 - Complete time: 
+# son: minish, quoting - DL: 8pm 01/12 - Complete time: 8pm 01/12
+# mbach: minish, exit code - DL: 8pm 30/12 - Complete time: 8pm 30/12
+Note: mbach continue working on 'logical operators' - DL: 8pm 01/12 - Complete time:
+>>>>>>> release1
 + Phase 2: 
 ## mbach: logical operators, signal handling - DL: 10am 06/12 - Complete time: 
 ## pan: path expansions - DL: 10am 06/12 - Complete time: 
