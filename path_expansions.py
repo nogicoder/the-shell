@@ -20,7 +20,7 @@ def tilde_expand_one(elem):
     expanded = expanduser(elem)
     if expanded.startswith('~'):
         if expanded.startswith('~+'):
-            expanded = expand_pwd(expanded)            
+            expanded = expand_pwd(expanded)
         elif expanded.startswith('~-'):
             expanded = expand_oldpwd(expanded)
     return expanded
@@ -78,7 +78,8 @@ def find_var(var):
     try:
         i = var.index('$')
         j = i + 1
-        while j < len(var) and (var[j].isalnum() or var[j] is '_') and var[j] != ' ':
+        while (j < len(var) and (var[j].isalnum() or var[j] is '_')
+                and var[j] != ' '):
             j += 1
         return i, j
     except ValueError:
@@ -145,7 +146,7 @@ def para_expans_bracket(var):
 
 
 def para_expans_var(var):
-    i, j =  find_var(var)
+    i, j = find_var(var)
     little_var = var[i:j]
     new_var = expandvars(little_var)
     return update_var(var, little_var, new_var)

@@ -379,7 +379,7 @@ class Shell:
                 self.exit_code = 126
             else:
                 # run the file
-                self.child = Popen(user_input)
+                child = Popen(user_input)
                 self.pid_list.append(child.pid)
                 child.wait()
                 self.exit_code = child.returncode
