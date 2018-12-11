@@ -76,6 +76,8 @@ class Shell:
         return globbing(path_expans(user_input))
 
     def execute_commands(self, user_input):
+        if not user_input:
+            return
         command = user_input[0]
         raw_input = ' '.join(user_input)
         write_history(command, raw_input)
