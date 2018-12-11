@@ -77,6 +77,7 @@ class Shell:
 
     def execute_commands(self, user_input):
         if not user_input:
+            self.exit_code = 1
             return
         command = user_input[0]
         raw_input = ' '.join(user_input)
