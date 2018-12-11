@@ -5,9 +5,9 @@ from globbing import globbing
 from shlex import split, quote
 from os.path import dirname, exists
 from os import chdir, environ, getcwd, kill
-from exit_code import handle_exit_code
+from exit_code import handle_exit_code, error_flag_handle
 from path_expansions import path_expans
-from string import ascii_lowercase, ascii_uppercase
+from string import ascii_letters
 from history import write_history, print_newest_history
 from logical_operator import check_operator, check_valid_operator
 from signal import signal, SIGQUIT, SIGTSTP, SIGTERM, SIGINT, SIG_IGN, SIG_DFL
@@ -19,16 +19,16 @@ from signal import signal, SIGQUIT, SIGTSTP, SIGTERM, SIGINT, SIG_IGN, SIG_DFL
 class Shell:
     # Initialize Shell
     def __init__(self):
-        self.ascii_list = ascii_lowercase + ascii_uppercase
+        self.ascii_list = ascii_letters
         # list of built-in features
         self.builtins = ('exit', 'printenv', 'export',
                          'unset', 'cd', 'history')
         # set initial exit_code value
         self.exit_code = 0
-        self.pid_list = []
         # run the REPL -- MAIN LOOP
         loop = True
         while loop:
+            self.pid_list = []
             try:
                 self.handle_signal()
                 self.user_input = self.handle_input()
@@ -59,11 +59,11 @@ class Shell:
         except ProcessLookupError:
             pass
 
-    def handle_signal(self, flag=False):
+    def handle_signal(self, signal_flag=False):
         signal(SIGQUIT, SIG_IGN)  # -3
         signal(SIGTSTP, SIG_IGN)  # -20
         signal(SIGTERM, SIG_IGN)
-        if flag:
+        if signal_flag:
             signal(SIGQUIT, self.do_signal)
             signal(SIGTSTP, self.do_signal)
             signal(SIGTERM, self.do_signal)
@@ -186,76 +186,74 @@ class Shell:
             exit(self.exit_code)
 
     # printenv feature
-    def printenv(self, user_input, flag=False):
+    def printenv(self, user_input, error_flag=False):
         # if no argument is provided
         if len(user_input) is 1:
             for key in environ:
                 print(key + '=' + environ[key])
         # if arguments are provided
         else:
-            for key in user_input[1:]:
-                try:
-                    print(environ[key])
-                # catch KeyError when an argument not exists in environ
-                except KeyError:
-                    flag = True
-                    pass
-        if not flag:
-            self.exit_code = 0
-        elif flag:
-            self.exit_code = 1
+            try:
+                key = user_input[1:][0]
+                print(environ[key])
+            # catch KeyError when an argument not exists in environ
+            except KeyError:
+                error_flag = True
+                pass
+        self.exit_code = error_flag_handle(error_flag)
 
     # export feature
-    def export(self, user_input, flag=False):
+    def export(self, user_input, error_flag=False):
         for item in user_input[1:]:
             if '=' in item:
                 items = item.split('=', 1)
                 if len(items) is 2 and items[0]:
+                    ascii_flag = True
                     for letter in items[0]:
                         if letter not in self.ascii_list:
-                            flag = False
-                    if flag:
+                            ascii_flag = False
+                    if ascii_flag:
                         environ[items[0]] = items[1]
                     else:
                         print('intek-sh: export:' +
                               ' `%s\': not a valid identifier' % (item))
+                        error_flag = True
                 else:
                     print('intek-sh: export:' +
                           ' `%s\': not a valid identifier' % (item))
-                    flag = True
+                    error_flag = True
             else:
                 # handle the case ''; '   '; 'b    a'
                 item_strip = item.strip().split(' ')
                 if len(item_strip) is 1 and item_strip[0]:
+                    ascii_flag = True
                     for letter in item_strip[0]:
                         if letter not in self.ascii_list:
-                            flag = False
-                    if flag:
-                        pass
+                            ascii_flag = False
+                    if ascii_flag:
+                        environ[item_strip[0]] = ' '
                     else:
                         print('intek-sh: export:' +
                               ' `%s\': not a valid identifier' % (item))
+                        error_flag = True
                 else:
                     print('intek-sh: export:' +
                           ' `%s\': not a valid identifier' % (item))
-                    flag = True
-        if not flag:
-            self.exit_code = 0
-        elif flag:
-            self.exit_code = 1
+                    error_flag = True
+        self.exit_code = error_flag_handle(error_flag)
 
     # unset feature
-    def unset(self, user_input, flag=False):
+    def unset(self, user_input, error_flag=False):
         for key in user_input[1:]:
-            flag = True
             try:
                 # handle the case ''; '   '; 'b    a'
                 key_strip = key.strip().split(' ')
                 if len(key_strip) is 1 and key_strip[0]:
+                    ascii_flag = True
                     for letter in key_strip[0]:
                         if letter not in self.ascii_list:
-                            flag = False
-                    if flag:
+                            ascii_flag = False
+                    if ascii_flag:
                         try:
                             del environ[key]
                         # catch if key not an environ variables
@@ -264,22 +262,20 @@ class Shell:
                     else:
                         print('intek-sh: unset:' +
                               ' `%s\': not a valid identifier' % (key))
+                        error_flag = True
                 else:
                     print('intek-sh: unset:' +
                           ' `%s\': not a valid identifier' % (key))
-                    flag = True
+                    error_flag = True
             # catch if no execute permission on key
             except OSError:
                 print('intek-sh: unset:' +
                       ' `%s\': not a valid identifier' % (key))
-                flag = True
-        if not flag:
-            self.exit_code = 0
-        elif flag:
-            self.exit_code = 1
+                error_flag = True
+        self.exit_code = error_flag_handle(error_flag)
 
     # cd feature
-    def cd(self, user_input, flag=False):
+    def cd(self, user_input, error_flag=False):
         try:
             if len(user_input) is 1:
                 dir_path = environ['HOME']
@@ -290,24 +286,22 @@ class Shell:
             else:
                 dir_path = getcwd() + '/%s' % (user_input[1])
             chdir(dir_path)
+            error_flag = False
         # catch when variable HOME doesn't have value
         except KeyError:
             print('intek-sh: cd: HOME not set')
-            flag = True
+            error_flag = True
         # catch when destination not exist
         except FileNotFoundError:
             print('intek-sh: cd:' +
                   ' %s: No such file or directory' % (user_input[1]))
-            flag = True
+            error_flag = True
         # catch when destination is not a directory
         except NotADirectoryError:
             print('intek-sh: cd:' +
                   ' %s: Not a directory' % (user_input[1]))
-            flag = True
-        if not flag:
-            self.exit_code = 0
-        elif flag:
-            self.exit_code = 1
+            error_flag = True
+        self.exit_code = error_flag_handle(error_flag)
 
     def history(self, user_input):
         self.exit_code = 0
@@ -414,10 +408,7 @@ class Shell:
                 self.pid_list.append(child.pid)
                 child.wait()
                 if child.returncode < 0:
-                    if child.returncode == -9:
-                        self.exit_code = 148
-                    else:
-                        self.exit_code = 128 - child.returncode
+                    self.exit_code = 128 - child.returncode
                 else:
                     self.exit_code = child.returncode
         # catch if the command doesn't exist
