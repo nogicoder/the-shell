@@ -45,7 +45,7 @@ def get_hidden_dir(arg):
 
 def globbing_one(arg):
     try:
-        if arg.startswith('.*'):
+        if arg.startswith('.*') or arg.startswith('..*'):
             return get_hidden_dir(arg)
         else:
             return glob_basic(arg)

@@ -33,6 +33,8 @@ class Shell:
                 inp = input('\x1b[1m\033[92mintek-sh$\033[0m\x1b[1m\x1b[0m ')
                 inputs = split(inp, posix=True)
                 self.user_input = self.handle_input(inputs)
+                if not self.user_input:
+                    continue
                 # handle && and || separately
                 if '&&' in self.user_input or '||' in self.user_input:
                     self.raw_input = ' '.join(self.user_input)
