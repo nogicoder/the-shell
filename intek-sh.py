@@ -8,6 +8,7 @@ from os import chdir, environ, getcwd, kill
 from exit_code import handle_exit_code, error_flag_handle
 from path_expansions import path_expans
 from string import ascii_letters
+from auto_completion import Initialize_completion
 from history import write_history, print_newest_history
 from logical_operator import check_operator, check_valid_operator
 from signal import signal, SIGQUIT, SIGTSTP, SIGTERM, SIGINT, SIG_IGN, SIG_DFL
@@ -70,6 +71,7 @@ class Shell:
 
     # Handling input to match each feature's requirement
     def handle_input(self):
+        Initialize_completion()
         raw_input = input('\x1b[1m\033[92mintek-sh$\033[0m\x1b[1m\x1b[0m ')
         user_input = split(raw_input, posix=True)
         user_input = handle_exit_code(user_input, self.exit_code)
