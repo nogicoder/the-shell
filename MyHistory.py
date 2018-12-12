@@ -4,7 +4,7 @@ from os import stat
 
 def write_history(inp):
     if inp is not '':
-        with open("history.txt", 'a+') as history_file:
+        with open(".history.txt", 'a+') as history_file:
             should_write = True
             # get line number
             history_file.seek(0)
@@ -28,10 +28,10 @@ def write_history(inp):
 
 def print_newest_history(n):
     try:
-        with open('history.txt', 'r') as history_file:
+        with open('.history.txt', 'r') as history_file:
             # get content of history file
             content = history_file.readlines()
-            # 'history 0' - do nothing
+            # 'history 0' - do nothing 
             if int(n) is 0:
                 pass
             # 'history n' with n < 0 - print error 

@@ -5,6 +5,7 @@ from os.path import dirname, exists
 from shlex import quote, split
 from string import ascii_lowercase, ascii_uppercase
 from subprocess import run
+from re import compile
 
 from globbing import globbing
 from MyHistory import print_newest_history, write_history
@@ -25,9 +26,11 @@ class Shell:
         loop = True
         while loop:
             try:
+
                 handle_signal()
                 self.handle_input()
                 self.execute_commands(self.user_input)
+                
             # catch EOFError when no input is prompted in
             except EOFError:
                 break
@@ -276,14 +279,14 @@ class Shell:
     def history(self):
         # with only 'history' command
         if len(self.user_input) is 1:
-            with open('history.txt', 'r') as history_file:
+            with open('.history.txt', 'r') as history_file:
                 for line in history_file:
                     print('  ' + line.strip())
         # 'history + options' command
         else:
             # clear option 'history -c'
             if '-c' in self.user_input[1:]:
-                open('history.txt', "w").close()
+                open('.history.txt', "w").close()
             # display [n] newest history 'history [n]'
             else:
                 # number of last lines need to print
@@ -305,7 +308,7 @@ class Shell:
             print('intek-sh: %s: event not found' % (command))
 
     def do_past_input(self, numline):
-        with open('history.txt', 'r') as history_file:
+        with open('.history.txt', 'r') as history_file:
             content = history_file.readlines()
             line_content = content[numline - 1].split('\t')[1].strip()
             line_contents = split(line_content, posix=True)
