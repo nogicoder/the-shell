@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 
-from subprocess import run, Popen
-from globbing import globbing
-from shlex import split, quote
-from os.path import dirname, exists
 from os import chdir, environ, getcwd, kill
-from exit_code import handle_exit_code, error_flag_handle
-from path_expansions import path_expans
+from os.path import dirname, exists
+from shlex import split
+from signal import SIG_DFL, SIG_IGN, SIGINT, SIGQUIT, SIGTERM, SIGTSTP, signal
 from string import ascii_letters
-from history import write_history, print_newest_history
-from logical_operator import check_operator, check_valid_operator
-from signal import signal, SIGQUIT, SIGTSTP, SIGTERM, SIGINT, SIG_IGN, SIG_DFL
+from subprocess import Popen, run
 
+from exit_code import error_flag_handle, handle_exit_code
+from globbing import globbing
+from history import print_newest_history, write_history
+from logical_operator import check_operator, check_valid_operator
+from path_expansions import path_expans
+from quoting import quote
 
 '''----------------------Create a Shell Object-----------------------------'''
 
@@ -72,8 +73,21 @@ class Shell:
     def handle_input(self):
         raw_input = input('\x1b[1m\033[92mintek-sh$\033[0m\x1b[1m\x1b[0m ')
         user_input = split(raw_input, posix=True)
+        print(user_input)
+        for index, item in enumerate(user_input):
+            user_input[index] = quote(item)
+
         user_input = handle_exit_code(user_input, self.exit_code)
-        return globbing(path_expans(user_input))
+        print(user_input)
+
+        for index, item in user_input:
+            if item.startswith("'"):
+                user_input[index] = quote(item)
+            else:
+                user_input[index] = globbing(path_expans(item))
+
+        # return globbing(path_expans(user_input))
+        return user_input
 
     def execute_commands(self, user_input):
         if not user_input:
