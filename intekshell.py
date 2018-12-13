@@ -17,7 +17,7 @@ from quoting import quote
 '''----------------------Create a Shell Object-----------------------------'''
 
 
-class Shell:
+class Shell():
     # Initialize Shell
     def __init__(self):
         self.ascii_list = ascii_letters
@@ -26,29 +26,13 @@ class Shell:
                          'unset', 'cd', 'history')
         # set initial exit_code value
         self.exit_code = 0
-        # run the REPL -- MAIN LOOP
-        loop = True
-        while loop:
-            self.pid_list = []
-            try:
-                self.handle_signal()
-                self.user_input = self.handle_input()
-                self.execute_commands(self.user_input)
-            # catch EOFError when no input is prompted in
-            except EOFError:
-                break
-            # catch IndexError when nothing is input in (empty input list)
-            except IndexError:
-                pass
-            except ValueError:
-                pass
-            except KeyboardInterrupt:
-                self.exit_code = 130
-                print('')
-                pass
-            except Exception:
-                pass
+        self.pid_list = []
+        self.user_input = []
+        # pipes and redirections
+        self.shell_input = []
+        self.shell_output = []
 
+    # execute signal
     def do_signal(self, signal, frame):
         try:
             self.exit_code = 128 + signal
@@ -60,6 +44,7 @@ class Shell:
         except ProcessLookupError:
             pass
 
+    # handling signal that interupt shell
     def handle_signal(self, signal_flag=False):
         signal(SIGQUIT, SIG_IGN)  # -3
         signal(SIGTSTP, SIG_IGN)  # -20
@@ -72,23 +57,23 @@ class Shell:
     # Handling input to match each feature's requirement
     def handle_input(self):
         raw_input = input('\x1b[1m\033[92mintek-sh$\033[0m\x1b[1m\x1b[0m ')
-        user_input = split(raw_input, posix=True)
+        user_input = split(raw_input, posix=False)
         print(user_input)
-        for index, item in enumerate(user_input):
-            user_input[index] = quote(item)
-
+        if user_input[1].startswith("'"):
+            print(True)
+        # user_input =  raw_input.split()  
         user_input = handle_exit_code(user_input, self.exit_code)
-        print(user_input)
 
-        for index, item in user_input:
-            if item.startswith("'"):
-                user_input[index] = quote(item)
-            else:
-                user_input[index] = globbing(path_expans(item))
+        # for index, item in user_input:
+        #     if item.startswith("'"):
+        #         user_input[index] = item
+        #     else:
+        # user_input[index] = globbing(path_expans(item))
 
-        # return globbing(path_expans(user_input))
-        return user_input
+        return globbing(path_expans(user_input))
+        # return user_input
 
+    # execute user_input
     def execute_commands(self, user_input):
         if not user_input:
             self.exit_code = 1
@@ -186,7 +171,7 @@ class Shell:
         command = user_input[0]
         return getattr(self, command)(user_input)
 
-    # exit feature
+    # BUILTIN: exit feature
     def exit(self, user_input):
         print('exit')
         if len(user_input) > 1 and not user_input[1].isdigit():
@@ -201,7 +186,7 @@ class Shell:
                 self.exit_code = int(user_input[1])
             exit(self.exit_code)
 
-    # printenv feature
+    # BUILTIN: printenv feature
     def printenv(self, user_input, error_flag=False):
         # if no argument is provided
         if len(user_input) is 1:
@@ -218,7 +203,7 @@ class Shell:
                 pass
         self.exit_code = error_flag_handle(error_flag)
 
-    # export feature
+    # BUILTIN: export feature
     def export(self, user_input, error_flag=False):
         for item in user_input[1:]:
             if '=' in item:
@@ -258,7 +243,7 @@ class Shell:
                     error_flag = True
         self.exit_code = error_flag_handle(error_flag)
 
-    # unset feature
+    # BUILTIN: unset feature
     def unset(self, user_input, error_flag=False):
         for key in user_input[1:]:
             try:
@@ -290,7 +275,7 @@ class Shell:
                 error_flag = True
         self.exit_code = error_flag_handle(error_flag)
 
-    # cd feature
+    # BUILTIN: cd feature
     def cd(self, user_input, error_flag=False):
         try:
             if len(user_input) is 1:
@@ -319,6 +304,7 @@ class Shell:
             error_flag = True
         self.exit_code = error_flag_handle(error_flag)
 
+    # BUILTIN: history feature
     def history(self, user_input):
         self.exit_code = 0
         # with only 'history' command
@@ -338,7 +324,7 @@ class Shell:
                 # function to print
                 self.exit_code = print_newest_history(n)
 
-    # '!' command, ralating to history
+    # BUILTIN: '!' command feature, ralating to history
     def do_exclamation(self, user_input):
         command = user_input[0]
         self.exit_code = 0
@@ -360,6 +346,7 @@ class Shell:
         except RecursionError:
             pass
 
+    # do past input in history
     def do_past_input(self, numline):
         with open('.history.txt', 'r') as history_file:
             content = history_file.readlines()
@@ -439,8 +426,3 @@ class Shell:
         except PermissionError:
             print('intek-sh: %s: Permission denied' % (command))
             self.exit_code = 126
-
-
-# Run the Shell
-if __name__ == '__main__':
-    Shell()
