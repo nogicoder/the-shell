@@ -189,7 +189,7 @@ def path_expans(inp):
             if '$' in arg or '~' in arg:
                 if '${' in arg:
                     if has_bad_substitution(arg):
-                        print('intek-sh: %s: bad substitution' % arg)
+                        print('intek-sh: {}: bad substitution'.format(arg))
                         return []
                     else:
                         path_expaned.append(path_expans_one(arg))
