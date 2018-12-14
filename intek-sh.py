@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 
 from os import chdir, environ, getcwd, kill
-from os.path import dirname, exists
+from os.path import dirname, exists, isdir
 from shlex import split
 from signal import SIG_DFL, SIG_IGN, SIGINT, SIGQUIT, SIGTERM, SIGTSTP, signal
 from string import ascii_letters
-from subprocess import Popen, run
-
+from subprocess import Popen
 from exit_code import error_flag_handle, handle_exit_code
 from globbing import globbing
 from history import print_newest_history, write_history
 from logical_operator import check_operator, check_valid_operator
 from path_expansions import path_expans
 from quoting import quote
+import re
 
 '''----------------------Create a Shell Object-----------------------------'''
 
@@ -32,8 +32,10 @@ class Shell:
             self.pid_list = []
             try:
                 self.handle_signal()
-                self.user_input = self.handle_input()
-                self.execute_commands(self.user_input)
+                self.raw_input = self.handle_input()
+                if self.raw_input:
+                    self.user_input = self.handle_expansion(self.raw_input)
+                    self.execute_commands(self.user_input)
             # catch EOFError when no input is prompted in
             except EOFError:
                 break
@@ -46,8 +48,8 @@ class Shell:
                 self.exit_code = 130
                 print('')
                 pass
-            except Exception:
-                pass
+            # except Exception:
+            #     pass
 
     def do_signal(self, signal, frame):
         try:
@@ -72,21 +74,32 @@ class Shell:
     # Handling input to match each feature's requirement
     def handle_input(self):
         raw_input = input('\x1b[1m\033[92mintek-sh$\033[0m\x1b[1m\x1b[0m ')
-        user_input = split(raw_input, posix=True)
-        print(user_input)
-        for index, item in enumerate(user_input):
-            user_input[index] = quote(item)
+        if not raw_input:
+            self.exit_code = 0
+        return raw_input
 
-        user_input = handle_exit_code(user_input, self.exit_code)
-        print(user_input)
+    def handle_expansion(self, raw_input):
+        # get the quotes from raw input
+        self.symbol = quote(raw_input)
 
-        for index, item in user_input:
-            if item.startswith("'"):
-                user_input[index] = quote(item)
+        # if backslash outside quotes
+        if not self.symbol:
+            if "\\" in raw_input:
+                raw_input = raw_input.replace("\\", r"\\")
+
+        # single quotes
+        if self.symbol is "'":
+            user_input = split(raw_input, posix=True)
+            user_input = user_input
+        else:
+            raw_input = handle_exit_code(raw_input, self.exit_code)
+            user_input = split(raw_input, posix=True)
+            # double quotes
+            if self.symbol is '"':
+                user_input = path_expans(user_input)
+            # symbol is None or backquotes
             else:
-                user_input[index] = globbing(path_expans(item))
-
-        # return globbing(path_expans(user_input))
+                user_input = globbing(path_expans(user_input))
         return user_input
 
     def execute_commands(self, user_input):
@@ -96,24 +109,25 @@ class Shell:
         command = user_input[0]
         raw_input = ' '.join(user_input)
         write_history(command, raw_input)
-        if user_input:
-            # handle && and || separately
-            if '&&' in raw_input or '||' in raw_input:
-                if check_valid_operator(raw_input):
-                    self.logical_operator(raw_input)
-            else:
-                command = user_input[0]
-                # check if command is a built-in
-                if command in self.builtins:
-                    self.do_builtin(user_input)
-                # check if command is '!*'
-                elif command.startswith('!') and len(command) > 1:
-                    self.do_exclamation(user_input)
-                    self.should_write_history = False
-                # if command is not a built-in
-                else:
-                    # Only this function use 'commands'
-                    self.do_external(user_input)
+        # if not single quote
+        if self.symbol is not "'":
+            if not "\&&" in raw_input and not "\||" in raw_input:
+                # if logical operator found inside
+                if '&&' in raw_input or '||' in raw_input:
+                    if check_valid_operator(raw_input):
+                        return self.logical_operator(raw_input)
+        # if single quote or (not single quote and no logical operator found)
+
+        # check if command is a built-in
+        if command in self.builtins:
+            self.do_builtin(user_input)
+        # check if command is '!*'
+        elif command.startswith('!') and len(command) > 1:
+            self.do_exclamation(user_input)
+            self.should_write_history = False
+        # if command is not a built-in
+        else:
+            self.do_external(user_input)
 
     # logical operator handling feature
     def logical_operator(self, raw_input):
@@ -232,11 +246,11 @@ class Shell:
                         environ[items[0]] = items[1]
                     else:
                         print('intek-sh: export:' +
-                              ' `%s\': not a valid identifier' % (item))
+                              ' `{}\': not a valid identifier'.format(item))
                         error_flag = True
                 else:
                     print('intek-sh: export:' +
-                          ' `%s\': not a valid identifier' % (item))
+                          ' `{}\': not a valid identifier'.format(item))
                     error_flag = True
             else:
                 # handle the case ''; '   '; 'b    a'
@@ -250,11 +264,11 @@ class Shell:
                         environ[item_strip[0]] = ' '
                     else:
                         print('intek-sh: export:' +
-                              ' `%s\': not a valid identifier' % (item))
+                              ' `{}\': not a valid identifier'.format(item))
                         error_flag = True
                 else:
                     print('intek-sh: export:' +
-                          ' `%s\': not a valid identifier' % (item))
+                          ' `{}\': not a valid identifier'.format(item))
                     error_flag = True
         self.exit_code = error_flag_handle(error_flag)
 
@@ -277,16 +291,16 @@ class Shell:
                             pass
                     else:
                         print('intek-sh: unset:' +
-                              ' `%s\': not a valid identifier' % (key))
+                              ' `{}\': not a valid identifier'.format(key))
                         error_flag = True
                 else:
                     print('intek-sh: unset:' +
-                          ' `%s\': not a valid identifier' % (key))
+                          ' `{}\': not a valid identifier'.format(key))
                     error_flag = True
             # catch if no execute permission on key
             except OSError:
                 print('intek-sh: unset:' +
-                      ' `%s\': not a valid identifier' % (key))
+                      ' `{}\': not a valid identifier'.format(key))
                 error_flag = True
         self.exit_code = error_flag_handle(error_flag)
 
@@ -300,7 +314,7 @@ class Shell:
             elif user_input[1] is '..':
                 dir_path = dirname(getcwd())
             else:
-                dir_path = getcwd() + '/%s' % (user_input[1])
+                dir_path = getcwd() + '/{}'.format(user_input[1])
             chdir(dir_path)
             error_flag = False
         # catch when variable HOME doesn't have value
@@ -310,12 +324,12 @@ class Shell:
         # catch when destination not exist
         except FileNotFoundError:
             print('intek-sh: cd:' +
-                  ' %s: No such file or directory' % (user_input[1]))
+                  ' {}: No such file or directory'.format(user_input[1]))
             error_flag = True
         # catch when destination is not a directory
         except NotADirectoryError:
             print('intek-sh: cd:' +
-                  ' %s: Not a directory' % (user_input[1]))
+                  ' {}: Not a directory'.format(user_input[1]))
             error_flag = True
         self.exit_code = error_flag_handle(error_flag)
 
@@ -350,13 +364,13 @@ class Shell:
                         numline = 0
                         self.do_past_input(numline)
                     else:
-                        print('intek-sh: %s: event not found' % (command))
+                        print('intek-sh: {}: event not found'.format(command))
             else:
                 numline = int(command[1:])
                 self.do_past_input(numline)
 
         except (IndexError, ValueError):
-            print('intek-sh: %s: event not found' % (command))
+            print('intek-sh: {}: event not found'.format(command))
         except RecursionError:
             pass
 
@@ -400,11 +414,11 @@ class Shell:
                 self.exit_code = child.returncode
         # catch if no execute permission on the file
         except PermissionError:
-            print('intek-sh: %s: Permission denied' % (command))
+            print('intek-sh: {}: Permission denied'.format(command))
             self.exit_code = 126
         # catch if the file doesn't exist
         except FileNotFoundError:
-            print('intek-sh: %s: No such file or directory' % (command))
+            print('intek-sh: {}: No such file or directory'.format(command))
             self.exit_code = 127
         # catch if file is not an executable file
         except OSError:
@@ -429,15 +443,15 @@ class Shell:
                     self.exit_code = child.returncode
         # catch if the command doesn't exist
         except FileNotFoundError:
-            print('intek-sh: %s: command not found' % (command))
+            print('intek-sh: {}: command not found'.format(command))
             self.exit_code = 127
         # catch if PATH variable doesn't exist
         except KeyError:
-            print('intek-sh: %s: No such file or directory' % (command))
+            print('intek-sh: {}: No such file or directory'.format(command))
             self.exit_code = 127
         # catch if no execute permission on the command
         except PermissionError:
-            print('intek-sh: %s: Permission denied' % (command))
+            print('intek-sh: {}: Permission denied'.format(command))
             self.exit_code = 126
 
 

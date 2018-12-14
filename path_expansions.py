@@ -186,10 +186,22 @@ def path_expans(inp):
     path_expaned = []
     try:
         for arg in inp:
-            if '$' in arg or '~' in arg:
+            if '\\$' in arg:
+                pos = arg.index('\\')
+                arg = arg[:pos] + arg[pos + 1:]
+                path_expaned.append(arg)
+            elif '$\\' in arg:
+                pos = arg.index('\\')
+                arg = arg[:pos] + arg[pos + 1:]
+                path_expaned.append(arg)
+            elif '\\' in arg:
+                pos = arg.index('\\')
+                arg = arg[pos + 1:]
+                path_expaned.append(arg)
+            elif '$' in arg or '~' in arg:
                 if '${' in arg:
                     if has_bad_substitution(arg):
-                        print('intek-sh: %s: bad substitution' % arg)
+                        print('intek-sh: {}: bad substitution'.format(arg))
                         return []
                     else:
                         path_expaned.append(path_expans_one(arg))

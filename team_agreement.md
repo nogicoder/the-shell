@@ -44,9 +44,10 @@ Note: mbach continue working on 'logical operators' - DL: 8pm 01/12 - Complete t
 + Phase 2: 
 ## mbach: logical operators, signal handling - DL: 10am 08/12 - Complete time: 08/12
 ## pan: path expansions - DL: 10am 06/12 - Complete time: 11/12
-## son: quoting (escape character), history - DL: 10am 06/12 - Complete time: 
+## son: quoting (escape character), history - DL: 10am 06/12 - Complete time: History (07/12)
 + Phase 3:
-## mbach: pipe - DL: 10pm 15/12 - Complete time: 
-## pan: curse (left, right, start/ end line, auto completion) - DL: 10pm 15/12 - Complete time: 
-## nson: curse (history, backspace, delete) - DL: 10pm 15/12 - Complete time: 
+## mbach: dynamic completion - DL: 10pm 15/12 - Complete time: 12/12 
+## pan: pipes & redirection - DL: 10pm 15/12 - Complete time: 
+## nson: quoting (escape character), pipes & redirection - DL: 10pm 15/12 - Complete time:
+Note: mbach continue working on other features
 
