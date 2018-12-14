@@ -186,11 +186,7 @@ def path_expans(inp):
     path_expaned = []
     try:
         for arg in inp:
-            if '\\$' in arg:
-                pos = arg.index('\\')
-                arg = arg[:pos] + arg[pos + 1:]
-                path_expaned.append(arg)
-            elif '$\\' in arg:
+            if '\\$' in arg or '$\\' in arg:
                 pos = arg.index('\\')
                 arg = arg[:pos] + arg[pos + 1:]
                 path_expaned.append(arg)

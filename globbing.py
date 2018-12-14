@@ -53,9 +53,12 @@ def globbing(inp):
     globbed = []
     try:
         for arg in inp:
-            if any(x in arg for x in ['*', '?', '[', ']']):
-                globbed.extend(globbing_one(arg))
+            if not any(("\\" + x) in arg for x in ['*', '?', '[', ']'])
+                if any(x in arg for x in ['*', '?', '[', ']']):
+                    globbed.extend(globbing_one(arg))
             else:
+                pos = arg.index('\\')
+                arg = arg[:pos] + arg[pos + 1:]
                 globbed.append(arg)
         return globbed
     except Exception:
