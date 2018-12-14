@@ -99,7 +99,7 @@ class Shell:
                 user_input = path_expans(user_input)
             # symbol is None or backquotes
             else:
-                user_input = globbing(path_expans(user_input))
+                user_input = path_expans(globbing(user_input))
         return user_input
 
     def execute_commands(self, user_input):
