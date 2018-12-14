@@ -71,35 +71,37 @@ class Shell:
     # Handling input to match each feature's requirement
     def handle_input(self):
         raw_input = input('\x1b[1m\033[92mintek-sh$\033[0m\x1b[1m\x1b[0m ')
-        user_input = split(raw_input, posix=True)
-        user_input = handle_exit_code(user_input, self.exit_code)
-        return globbing(path_expans(user_input))
+        user_input = handle_exit_code(raw_input, self.exit_code)
+        return split(user_input, posix=True)
+        
 
     def execute_commands(self, user_input):
+        if not user_input:
+            self.exit_code = 0
+            return
+        user_input = globbing(path_expans(user_input))
         if not user_input:
             self.exit_code = 1
             return
         command = user_input[0]
         raw_input = ' '.join(user_input)
         write_history(command, raw_input)
-        if user_input:
-            # handle && and || separately
-            if '&&' in raw_input or '||' in raw_input:
-                if check_valid_operator(raw_input):
-                    self.logical_operator(raw_input)
+        # handle && and || separately
+        if '&&' in raw_input or '||' in raw_input:
+            if check_valid_operator(raw_input):
+                self.logical_operator(raw_input)
+        else:
+            command = user_input[0]
+            # check if command is a built-in
+            if command in self.builtins:
+                self.do_builtin(user_input)
+            # check if command is '!*'
+            elif command.startswith('!') and len(command) > 1:
+                self.do_exclamation(user_input)
+                self.should_write_history = False
+            # if command is not a built-in
             else:
-                command = user_input[0]
-                # check if command is a built-in
-                if command in self.builtins:
-                    self.do_builtin(user_input)
-                # check if command is '!*'
-                elif command.startswith('!') and len(command) > 1:
-                    self.do_exclamation(user_input)
-                    self.should_write_history = False
-                # if command is not a built-in
-                else:
-                    # Only this function use 'commands'
-                    self.do_external(user_input)
+                self.do_external(user_input)
 
     # logical operator handling feature
     def logical_operator(self, raw_input):

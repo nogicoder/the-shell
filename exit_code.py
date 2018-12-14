@@ -1,11 +1,10 @@
 # convert $? to exit code
-def handle_exit_code(user_input, exit_code):
-    if '$?' in user_input:
-        pos = user_input.index('$?')
-        user_input[pos] = str(exit_code)
-    if '${?}' in user_input:
-        pos = user_input.index('${?}')
-        user_input[pos] = str(exit_code)
+def handle_exit_code(raw_input, exit_code):
+    user_input = raw_input
+    if '$?' in raw_input:
+        user_input = raw_input.replace('$?', str(exit_code))
+        if '${?}' in user_input:
+            user_input = user_input.replace('${?}', str(exit_code))
     return user_input
 
 
