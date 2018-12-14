@@ -40,5 +40,5 @@ def print_newest_history(n):
         return exit_code
     except ValueError:
         exit_code = 1
-        print('intek-sh: history: %s: numeric argument required' % (n))
+        print('intek-sh: history: {}: numeric argument required'.format(n))
         return exit_code
