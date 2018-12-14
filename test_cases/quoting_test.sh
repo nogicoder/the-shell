@@ -14,3 +14,6 @@ echo $HO\ME
 echo $H\OME
 echo asdf$\HOME
 echo "   $HOMEasdf  "
+echo \*.py
+echo "*.py"
+echo ' *.py'
