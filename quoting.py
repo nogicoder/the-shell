@@ -1,4 +1,6 @@
 from shlex import split
+from path_expansions import path_expans
+from globbing import globbing
 
 
 def process_new_line(new_line, user_input, quote):
@@ -54,3 +56,60 @@ def adding_backslash(raw_input, user_input=''):
                     user_input = process_new_line(new_line, user_input, quote)
             i += 1
     return user_input
+
+
+def handle_single_quote(item, pos1, pos2):
+    if pos1 < pos2:
+        left = " ".join(path_expans(split('"' + item[:pos1] + '"', posix=True)))
+        mid = item[pos1 + 1:pos2]
+        right = " ".join(path_expans(split('"' + item[pos2 + 1:] + '"', posix=True)))
+    elif pos1 > pos2:
+        left = item[:pos2]
+        mid = " ".join(path_expans(split('"' + item[pos2 + 1:pos1] + '"', posix=True)))
+        right = item[pos1 + 1:]
+
+    if "'" in mid:
+        pos1 = mid.index("'", 0)
+        pos2 = len(mid) - mid[::-1].index("'") - 1
+        mid = handle_single_quote(mid, pos2, pos1)
+    if left and right:
+        item = left + mid + right
+    elif left and not right:
+        item = left + mid
+    elif right and not left:
+        item = mid + right
+    else:
+        item = mid
+    return item
+
+
+def handle_quotes(user_input):
+    result = []
+    for item in user_input:
+        if '"' in item and "'" in item:
+            pos1 = item.index("'", 0)
+            pos2 = item.index('"', 0)
+            pos3 = len(item) - item[::-1].index("'") - 1
+            pos4 = len(item) - item[::-1].index('"') - 1
+            # if single quote open (and close)
+            if pos1 < pos2:
+                item = handle_single_quote(item, pos1, pos3)
+            # if double quote open (and close)
+            else:
+                item = " ".join(path_expans(split(item, posix=True)))
+        elif '"' in item and "'" not in item:
+            item = " ".join(path_expans(split(item, posix=True)))
+        elif "'" in item and '"' not in item:
+            pos1 = item.index("'", 0)
+            pos2 = len(item) - item[::-1].index("'") - 1
+            item = handle_single_quote(item, pos1, pos2)
+        else:
+            if "'" in item:
+                item_list = split('"' + item + '"', posix=True)
+            else:
+                item_list = split("'" + item + "'", posix=True)
+            item = " ".join(path_expans(item_list))
+        item_list = split("'" + item + "'", posix=True)
+        item = " ".join(globbing(item_list))
+        result.append(item)
+    return result
