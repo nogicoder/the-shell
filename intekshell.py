@@ -5,14 +5,13 @@ from os.path import dirname, exists
 from shlex import split
 from signal import SIG_DFL, SIG_IGN, SIGINT, SIGQUIT, SIGTERM, SIGTSTP, signal
 from string import ascii_letters
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
 
 from exit_code import error_flag_handle, handle_exit_code
 from globbing import globbing
 from history import print_newest_history, write_history
 from logical_operator import check_operator, check_valid_operator
 from path_expansions import path_expans
-from quoting import quote
 
 '''----------------------Create a Shell Object-----------------------------'''
 
@@ -20,7 +19,9 @@ from quoting import quote
 class Shell():
     # Initialize Shell
     def __init__(self):
+        # ascii list
         self.ascii_list = ascii_letters
+
         # list of built-in features
         self.builtins = ('exit', 'printenv', 'export',
                          'unset', 'cd', 'history')
@@ -32,7 +33,7 @@ class Shell():
         # input
         self.raw_input = ''
         self.user_input = []
-    
+
         # pipes and redirections
         self.shell_stdin = None
         self.shell_stdout = None
@@ -339,7 +340,8 @@ class Shell():
                 with open('.history.txt', 'r') as history_file:
                     content = history_file.readlines()
                     for current_numline in range(len(content) - 1, -1, -1):
-                        current_command = content[current_numline].split('\t')[1].strip()
+                        current_command = content[current_numline].split('\t')
+                        current_command = current_command[1].strip()
                         if current_command.startswith(command[1:]):
                             self.do_past_input(current_numline)
                             break
@@ -384,11 +386,14 @@ class Shell():
                 self.exit_code = 126
             else:
                 # run the file
-                child = Popen(user_input, stdout=PIPE, stdin=self.shell_stdin)
+                child = Popen(user_input, stdout=self.shell_stdout, stdin=self.shell_stdin)
                 self.process = child
                 self.pid_list.append(child.pid)
                 child.wait()
                 self.exit_code = child.returncode
+
+                output = child.communicate()[0]
+                return output.decode().strip()
         # catch if no execute permission on the file
         except PermissionError:
             print('intek-sh: %s: Permission denied' % (command))
@@ -419,6 +424,9 @@ class Shell():
                     self.exit_code = 128 - child.returncode
                 else:
                     self.exit_code = child.returncode
+
+                output = child.communicate()[0]
+                return output.decode().strip()
         # catch if the command doesn't exist
         except FileNotFoundError:
             print('intek-sh: %s: command not found' % (command))
