@@ -5,7 +5,7 @@ from os.path import dirname, exists
 from shlex import split
 from signal import SIG_DFL, SIG_IGN, SIGINT, SIGQUIT, SIGTERM, SIGTSTP, signal
 from string import ascii_letters
-from subprocess import Popen, run
+from subprocess import Popen, PIPE
 
 from exit_code import error_flag_handle, handle_exit_code
 from globbing import globbing
@@ -24,13 +24,19 @@ class Shell():
         # list of built-in features
         self.builtins = ('exit', 'printenv', 'export',
                          'unset', 'cd', 'history')
+
         # set initial exit_code value
         self.exit_code = 0
         self.pid_list = []
+
+        # input
+        self.raw_input = ''
         self.user_input = []
+    
         # pipes and redirections
-        self.shell_input = []
-        self.shell_output = []
+        self.shell_input = None
+        self.shell_output = None
+        self.process = None
 
     # execute signal
     def do_signal(self, signal, frame):
@@ -56,22 +62,10 @@ class Shell():
 
     # Handling input to match each feature's requirement
     def handle_input(self):
-        raw_input = input('\x1b[1m\033[92mintek-sh$\033[0m\x1b[1m\x1b[0m ')
-        user_input = split(raw_input, posix=False)
-        print(user_input)
-        if user_input[1].startswith("'"):
-            print(True)
-        # user_input =  raw_input.split()  
+        __raw_input = self.raw_input
+        user_input = split(__raw_input, posix=False)
         user_input = handle_exit_code(user_input, self.exit_code)
-
-        # for index, item in user_input:
-        #     if item.startswith("'"):
-        #         user_input[index] = item
-        #     else:
-        # user_input[index] = globbing(path_expans(item))
-
         return globbing(path_expans(user_input))
-        # return user_input
 
     # execute user_input
     def execute_commands(self, user_input):
@@ -337,9 +331,18 @@ class Shell():
                         self.do_past_input(numline)
                     else:
                         print('intek-sh: %s: event not found' % (command))
-            else:
+            elif command[1:].isdigit:
                 numline = int(command[1:])
                 self.do_past_input(numline)
+            elif command[1:].isalnum:
+                print('a')
+                with open('.history.txt', 'r') as history_file:
+                    content = history_file.readlines()
+                    for current_numline in range(len(content) - 1, -1, -1):
+                        current_command = content[current_numline].split('\t')[1].strip()
+                        if current_command.startswith(command[1:]):
+                            self.do_past_input(current_numline)
+                            break
 
         except (IndexError, ValueError):
             print('intek-sh: %s: event not found' % (command))
@@ -381,7 +384,8 @@ class Shell():
                 self.exit_code = 126
             else:
                 # run the file
-                child = Popen(user_input)
+                child = Popen(user_input, stdout=PIPE, stdin=self.shell_input)
+                self.process = child
                 self.pid_list.append(child.pid)
                 child.wait()
                 self.exit_code = child.returncode
@@ -407,7 +411,8 @@ class Shell():
             paths = environ['PATH'].split(':')
             # check if the command is in paths
             if command and (exists(path + '/' + command) for path in paths):
-                child = Popen(user_input)
+                child = Popen(user_input, stdout=self.shell_output, stdin=self.shell_input)
+                self.process = child
                 self.pid_list.append(child.pid)
                 child.wait()
                 if child.returncode < 0:

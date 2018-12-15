@@ -1,35 +1,45 @@
 #!/usr/bin/env python3
 
 from intekshell import Shell
-
-def main():
-
-    ShellObj = Shell()
-    handle_shell(ShellObj)
+from subprocess import PIPE
     
-    input = 'cat abc.txt | wc -l'
-    if '|' in input:
-        pipe_commands = input.split('|')
-        shells = [Shell() for i in range(len(pipe_commands))]
-        handle_shell(shells[0])
-        for index, current_shell in enumerate(shells[1:]):
-            current_shell.shell_input = shells[index - 1].shell_output
-            handle_shell(current_shell)
-            
 def handle_shell(shell_obj):
     # run the REPL -- MAIN LOOP
     loop = True
     while loop:
         try:
+            # raw_input = input('\x1b[1m\033[92mintek-sh$\033[0m\x1b[1m\x1b[0m ')
+            # shell_obj.raw_input = raw_input
+            # shell_obj.handle_signal()
+            # shell_obj.user_input = shell_obj.handle_input()
+            # shell_obj.execute_commands(shell_obj.user_input)
+
             shell_obj.handle_signal()
-            if not shell_obj.shell_input:
+            raw_input = input('\x1b[1m\033[92mintek-sh$\033[0m\x1b[1m\x1b[0m ')
+            # pipe case
+            if '|' in raw_input:
+                inputs = raw_input.split('|')
+                for index, command in enumerate(inputs):
+                    # Setting Shell's inputs var
+                    shell_obj.raw_input = command.strip()
+                    shell_obj.user_input = shell_obj.handle_input()
+                    # Setting streams
+                    shell_obj.shell_input = shell_obj.shell_output if index != 0 else None
+                    shell_obj.shell_output = PIPE if index != len(inputs) - 1 else None
+                    # Execute 
+                    shell_obj.execute_commands(shell_obj.user_input)
+            # normal case
+            else:
+                # Setting Shell's inputs var
+                shell_obj.raw_input = raw_input
                 shell_obj.user_input = shell_obj.handle_input()
+                # Setting streams
+                shell_obj.shell_input = None
+                shell_obj.shell_output = None
+                # Execute
                 shell_obj.execute_commands(shell_obj.user_input)
                 
-            else:
-                shell_obj.execute_commands(shell_obj.shell_input)
-                loop = False
-                return shell_obj.shell_output
+
         # catch EOFError when no input is prompted in
         except EOFError:
             break
@@ -44,6 +54,11 @@ def handle_shell(shell_obj):
             pass
         except Exception:
             pass
+
+def main():
+    
+    main_shell = Shell()
+    handle_shell(main_shell)
 
 if __name__ == "__main__":
     main()
