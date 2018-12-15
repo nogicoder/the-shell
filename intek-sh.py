@@ -12,6 +12,7 @@ from history import print_newest_history, write_history
 from logical_operator import check_operator, check_valid_operator
 from path_expansions import path_expans
 from quoting import adding_backslash, handle_quotes
+from backquotes import handle_backquotes
 
 
 '''----------------------Create a Shell Object-----------------------------'''
