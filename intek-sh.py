@@ -3,7 +3,7 @@
 from subprocess import run, Popen
 from globbing import globbing
 from shlex import split, quote
-from os.path import dirname, exists
+from os.path import dirname, exists, isdir
 from os import chdir, environ, getcwd, kill
 from exit_code import handle_exit_code, error_flag_handle
 from path_expansions import path_expans
@@ -73,7 +73,7 @@ class Shell:
         raw_input = input('\x1b[1m\033[92mintek-sh$\033[0m\x1b[1m\x1b[0m ')
         user_input = handle_exit_code(raw_input, self.exit_code)
         return split(user_input, posix=True)
-        
+
 
     def execute_commands(self, user_input):
         if not user_input:
@@ -361,7 +361,7 @@ class Shell:
     def do_external(self, user_input):
         command = user_input[0]
         # if command is an executable file
-        if command.startswith('./'):
+        if command.startswith('./') or command.startswith('../'):
             self.run_file(user_input)
         elif command in ['false', 'False']:
             self.exit_code = 1
@@ -377,8 +377,8 @@ class Shell:
         command = user_input[0]
         try:
             # catch if only ./ is prompted in
-            if command == './':
-                print('intek-sh: ./: Is a directory')
+            if command == './' or command == '../':
+                print('intek-sh: {}: Is a directory'.format(command))
                 self.exit_code = 126
             else:
                 # run the file
@@ -404,17 +404,21 @@ class Shell:
         self.handle_signal(True)
         command = user_input[0]
         try:
-            # get paths to external binaries indicated by variable PATH
-            paths = environ['PATH'].split(':')
-            # check if the command is in paths
-            if command and (exists(path + '/' + command) for path in paths):
-                child = Popen(user_input)
-                self.pid_list.append(child.pid)
-                child.wait()
-                if child.returncode < 0:
-                    self.exit_code = 128 - child.returncode
-                else:
-                    self.exit_code = child.returncode
+            if isdir(command):
+                print('intek-sh: {}: Is a directory'.format(command))
+                self.exit_code = 126
+            else:
+                # get paths to external binaries indicated by variable PATH
+                paths = environ['PATH'].split(':')
+                # check if the command is in paths
+                if command and (exists(path + '/' + command) for path in paths):
+                    child = Popen(user_input)
+                    self.pid_list.append(child.pid)
+                    child.wait()
+                    if child.returncode < 0:
+                        self.exit_code = 128 - child.returncode
+                    else:
+                        self.exit_code = child.returncode
         # catch if the command doesn't exist
         except FileNotFoundError:
             print('intek-sh: {}: command not found'.format(command))
