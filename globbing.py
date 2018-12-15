@@ -44,7 +44,16 @@ def globbing_one(arg):
         if arg.startswith('.*') or arg.startswith('..*'):
             return get_hidden_dir(arg)
         else:
-            return glob_basic(arg)
+            if arg is glob_basic(arg)[0]:
+                temp = []
+                if '\\' in arg:
+                    pos = arg.index('\\')
+                    arg = arg[:pos] + arg[pos + 1:]
+                    temp.append(arg)
+                return temp
+            else:
+                return glob_basic(arg)
+
     except Exception:
         return [arg]
 
@@ -53,11 +62,8 @@ def globbing(inp):
     globbed = []
     try:
         for arg in inp:
-            if not any(x in arg for x in ['\*', '\?', '\[', '\]']):
-                if any(x in arg for x in ['*', '?', '[', ']']):
-                    globbed.extend(globbing_one(arg))
-                else:
-                    globbed.append(arg)
+            if any(x in arg for x in ['*', '?', '[', ']']):
+                globbed.extend(globbing_one(arg))
             else:
                 globbed.append(arg)
         return globbed

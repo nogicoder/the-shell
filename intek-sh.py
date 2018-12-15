@@ -13,6 +13,7 @@ from logical_operator import check_operator, check_valid_operator
 from path_expansions import path_expans
 from quoting import adding_backslash
 
+
 '''----------------------Create a Shell Object-----------------------------'''
 
 
@@ -34,7 +35,7 @@ class Shell:
                 self.raw_input = self.handle_input()
                 if self.raw_input:
                     self.user_input = self.handle_expansion(self.raw_input)
-                    self.execute_commands(self.user_input)
+                    self.execute_commands(self.user_input, self.raw_input)
             # catch EOFError when no input is prompted in
             except EOFError:
                 break
@@ -77,49 +78,90 @@ class Shell:
             self.exit_code = 0
         return raw_input
 
+    def handle_quotes(self, user_input):
+        result = []
+        for item in user_input:
+            if '"' in item and "'" in item:
+                pos1 = item.index("'", 0)
+                pos2 = item.index('"', 0)
+                pos3 = len(item) - item[::-1].index("'") - 1
+                pos4 = len(item) - item[::-1].index('"') - 1
+                # if single quote open (and close)
+                if pos1 < pos2:
+                    left = path_expans(split('"' + item[:pos1] + '"', posix=True))
+                    mid = item[pos1 + 1:pos3]
+                    right = path_expans(split('"' + item[pos3 + 1:] + '"', posix=True))
+                    if left and right:
+                        item = " ".join(left[:-1]) + left[-1] + mid + right[0] + " ".join(right[1:])
+                    elif left and not right:
+                        item = " ".join(left[:-1]) + left[-1] + mid
+                    elif right and not left:
+                        item = mid + right[0] + " ".join(right[1:])
+                # if double quote open (and close)
+                else:
+                    left = path_expans(split('"' + item[:pos2] + '"', posix=True)) + path_expans(split('"' + item[pos2 + 1:pos1] + '"', posix=True))
+                    mid = item[pos1 + 1:pos3]
+                    right = path_expans(split('"' + item[pos3 + 1: pos4] + '"', posix=True)) + path_expans(split('"' + item[pos4 + 1:] + '"', posix=True))
+                    if left and right:
+                        item = " ".join(left[:-1]) + left[-1] + mid + right[0] + " ".join(right[1:])
+                    elif left and not right:
+                        item = " ".join(left[:-1]) + left[-1] + mid
+                    elif right and not left:
+                        item = mid + right[0] + " ".join(right[1:])
+            elif '"' in item and "'" not in item:
+                item = " ".join(path_expans(split(item, posix=True)))
+            elif "'" in item and '"' not in item:
+                pos1 = item.index("'", 0)
+                pos2 = len(item) - item[::-1].index("'") - 1
+                left = path_expans(split('"' + item[:pos1] + '"', posix=True))
+                mid = item[pos1 + 1:pos2]
+                right = path_expans(split('"' + item[pos2 + 1:] + '"', posix=True))
+                if left and right:
+                    item = " ".join(left[:-1]) + left[-1] + mid + right[0] + " ".join(right[1:])
+                elif left and not right:
+                    item = " ".join(left[:-1]) + left[-1] + mid
+                elif right and not left:
+                    item = mid + right[0] + " ".join(right[1:])
+            else:
+                if "'" in item:
+                    item_list = split('"' + item + '"', posix=True)
+                else:
+                    item_list = split("'" + item + "'", posix=True)
+                item = " ".join(path_expans(item_list))
+            if "'" in item:
+                item_list = split('"' + item + '"', posix=True)
+            else:
+                item_list = split("'" + item + "'", posix=True)
+            item = " ".join(globbing(item_list))
+            result.append(item)
+        return result
+
     def handle_expansion(self, raw_input):
         # handle the quotes
         user_input = adding_backslash(raw_input)
-        print(user_input)
-        # handle backslash outside quotes
+
         if user_input == raw_input:
             if "\\" in user_input:
-                user_input = user_input.replace("\\", r"\\")
-        if "\'" in user_input:
-            pos1 = user_input.index("\'", 1)
-            pos2 = user_input.index("\'", -1)
-            user_input = user_input[:pos1] + user_input[pos1:pos2 + 1] + user_input[pos2 + 1:]
-            temp1 = split(user_input[:pos1], posix=True)
-            print(temp1)
-            temp1 = path_expans(globbing(temp1))
-            print(temp1)
-            temp2 = split(user_input[pos2 + 1:], posix=True)
-            temp2 = path_expans(globbing(temp1))
-            temp_main = temp1[-1] + user_input[pos1:pos2 + 1] + temp2[0]
-            user_input += ' '.join(temp1[:-1]) + temp_main + ' '.join(temp2[1:])
-        elif '\"' in user_input:
-            user_input = split(user_input, posix=True)
-            user_input = path_expans(user_input)
-        else:
-            user_input = split(user_input, posix=True)
-            user_input = path_expans(globbing(user_input))
-        print(user_input)
+                user_input =user_input.replace("\\", r"\\")
+
+        user_input = split(user_input, posix=True)
+        user_input = self.handle_quotes(user_input)
+
         return user_input
 
-    def execute_commands(self, user_input):
+    def execute_commands(self, user_input, raw_input):
         if not user_input:
             self.exit_code = 1
             return
+
         command = user_input[0]
-        raw_input = ' '.join(user_input)
         write_history(command, raw_input)
 
-        if not "\&&" in raw_input and not "\||" in raw_input:
-            # if logical operator found inside
-            if '&&' in raw_input or '||' in raw_input:
+        if (not "\&&" in raw_input and not "\||" in raw_input and
+            ('&&' in raw_input or '||' in raw_input)):
                 if check_valid_operator(raw_input):
                     return self.logical_operator(raw_input)
-        print('here first')
+
         # check if command is a built-in
         if command in self.builtins:
             self.do_builtin(user_input)
@@ -429,7 +471,6 @@ class Shell:
 
     # run the external binaries
     def run_binary(self, user_input):
-        print('here')
         self.handle_signal(True)
         command = user_input[0]
         try:
