@@ -34,8 +34,8 @@ class Shell():
         self.user_input = []
     
         # pipes and redirections
-        self.shell_input = None
-        self.shell_output = None
+        self.shell_stdin = None
+        self.shell_stdout = None
         self.process = None
 
     # execute signal
@@ -384,7 +384,7 @@ class Shell():
                 self.exit_code = 126
             else:
                 # run the file
-                child = Popen(user_input, stdout=PIPE, stdin=self.shell_input)
+                child = Popen(user_input, stdout=PIPE, stdin=self.shell_stdin)
                 self.process = child
                 self.pid_list.append(child.pid)
                 child.wait()
@@ -411,7 +411,7 @@ class Shell():
             paths = environ['PATH'].split(':')
             # check if the command is in paths
             if command and (exists(path + '/' + command) for path in paths):
-                child = Popen(user_input, stdout=self.shell_output, stdin=self.shell_input)
+                child = Popen(user_input, stdout=self.shell_stdout, stdin=self.shell_stdin)
                 self.process = child
                 self.pid_list.append(child.pid)
                 child.wait()
