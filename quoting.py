@@ -108,10 +108,10 @@ def handle_quotes(user_input, exit_code):
             # if double quote open (and close)
             else:
                 item = handle_exit_code(item, exit_code)
-                item = " ".join(path_expans(split(item, posix=True)))
+                item = " ".join(path_expans(split("'" + item + "'", posix=True)))
         elif '"' in item and "'" not in item:
             item = handle_exit_code(item, exit_code)
-            item = " ".join(path_expans(split(item, posix=True)))
+            item = " ".join(path_expans(split("'" + item + "'", posix=True)))
         elif "'" in item and '"' not in item:
             pos1 = item.index("'", 0)
             pos2 = len(item) - item[::-1].index("'") - 1
