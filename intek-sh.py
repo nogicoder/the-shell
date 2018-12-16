@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 
-from subprocess import run, Popen
-from globbing import globbing
-from shlex import split, quote
-from os.path import dirname, exists, isdir
 from os import chdir, environ, getcwd, kill
-from exit_code import handle_exit_code, error_flag_handle
-from path_expansions import path_expans
+from os.path import dirname, exists, isdir
+from shlex import split
+from signal import SIG_DFL, SIG_IGN, SIGINT, SIGQUIT, SIGTERM, SIGTSTP, signal
 from string import ascii_letters
-from history import write_history, print_newest_history
+from subprocess import Popen
+from exit_code import error_flag_handle
+from globbing import globbing
+from history import print_newest_history, write_history
 from logical_operator import check_operator, check_valid_operator
-from signal import signal, SIGQUIT, SIGTSTP, SIGTERM, SIGINT, SIG_IGN, SIG_DFL
+from path_expansions import path_expans
+from quoting import adding_backslash, handle_quotes
 
 
 '''----------------------Create a Shell Object-----------------------------'''
@@ -31,8 +32,10 @@ class Shell:
             self.pid_list = []
             try:
                 self.handle_signal()
-                self.user_input = self.handle_input()
-                self.execute_commands(self.user_input)
+                self.raw_input = self.handle_input()
+                if self.raw_input:
+                    self.user_input = self.handle_expansion(self.raw_input)
+                    self.execute_commands(self.user_input, self.raw_input)
             # catch EOFError when no input is prompted in
             except EOFError:
                 break
@@ -45,8 +48,8 @@ class Shell:
                 self.exit_code = 130
                 print('')
                 pass
-            except Exception:
-                pass
+            # except Exception:
+            #     pass
 
     def do_signal(self, signal, frame):
         try:
@@ -71,37 +74,46 @@ class Shell:
     # Handling input to match each feature's requirement
     def handle_input(self):
         raw_input = input('\x1b[1m\033[92mintek-sh$\033[0m\x1b[1m\x1b[0m ')
-        user_input = handle_exit_code(raw_input, self.exit_code)
-        return split(user_input, posix=True)
-
-
-    def execute_commands(self, user_input):
-        if not user_input:
+        if not raw_input:
             self.exit_code = 0
-            return
-        user_input = globbing(path_expans(user_input))
+        return raw_input
+
+    def handle_expansion(self, raw_input):
+        # handle the quotes
+        user_input = adding_backslash(raw_input)
+
+        if user_input == raw_input:
+            if "\\" in user_input:
+                user_input =user_input.replace("\\", r"\\")
+
+        user_input = split(user_input, posix=True)
+        user_input = handle_quotes(user_input, self.exit_code)
+
+        return user_input
+
+    def execute_commands(self, user_input, raw_input):
         if not user_input:
             self.exit_code = 1
             return
+
         command = user_input[0]
-        raw_input = ' '.join(user_input)
         write_history(command, raw_input)
-        # handle && and || separately
-        if '&&' in raw_input or '||' in raw_input:
-            if check_valid_operator(raw_input):
-                self.logical_operator(raw_input)
+
+        if (not "\&&" in raw_input and not "\||" in raw_input and
+            ('&&' in raw_input or '||' in raw_input)):
+                if check_valid_operator(raw_input):
+                    return self.logical_operator(raw_input)
+
+        # check if command is a built-in
+        if command in self.builtins:
+            self.do_builtin(user_input)
+        # check if command is '!*'
+        elif command.startswith('!') and len(command) > 1:
+            self.do_exclamation(user_input)
+            self.should_write_history = False
+        # if command is not a built-in
         else:
-            command = user_input[0]
-            # check if command is a built-in
-            if command in self.builtins:
-                self.do_builtin(user_input)
-            # check if command is '!*'
-            elif command.startswith('!') and len(command) > 1:
-                self.do_exclamation(user_input)
-                self.should_write_history = False
-            # if command is not a built-in
-            else:
-                self.do_external(user_input)
+            self.do_external(user_input)
 
     # logical operator handling feature
     def logical_operator(self, raw_input):
