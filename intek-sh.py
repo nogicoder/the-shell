@@ -67,7 +67,7 @@ class Shell:
     def handle_signal(self, signal_flag=False):
         signal(SIGQUIT, SIG_IGN)  # -3
         signal(SIGTSTP, SIG_IGN)  # -20
-        signal(SIGTERM, SIG_IGN)
+        # signal(SIGTERM, SIG_IGN)
         if signal_flag:
             signal(SIGQUIT, self.do_signal)
             signal(SIGTSTP, self.do_signal)
@@ -106,7 +106,6 @@ class Shell:
             arg_lst.append(result)
         return arg_lst
 
-
     def execute_cmd(self, item):
         self.child_flag = True
         child = fork()
@@ -114,10 +113,9 @@ class Shell:
         if not child:
             cpid = getpid()
             self.execute_commands(user_item, item)
-            kill(getpid(), SIGTERM)
+            kill(cpid, SIGTERM)
         if child:
             wait()
-
 
     def handle_expansion(self, raw_input):
         # handle the quotes
