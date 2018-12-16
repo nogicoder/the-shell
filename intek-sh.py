@@ -211,13 +211,13 @@ class Shell:
                 print(key + '=' + environ[key])
         # if arguments are provided
         else:
-            try:
-                key = user_input[1:][0]
-                print(environ[key])
+            for key in user_input[1:]:
+                try:
+                    print(environ[key])
             # catch KeyError when an argument not exists in environ
-            except KeyError:
-                error_flag = True
-                pass
+                except KeyError:
+                    error_flag = True
+                    pass
         self.exit_code = error_flag_handle(error_flag)
 
     # export feature
@@ -369,7 +369,7 @@ class Shell:
             line_contents = split(line_content, posix=True)
 
             print(line_content)
-            self.execute_commands(line_contents)
+            self.execute_commands(line_contents, line_content)
 
     # execute external command
     def do_external(self, user_input):
