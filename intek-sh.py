@@ -87,7 +87,7 @@ class Shell:
 
         if user_input == raw_input:
             if "\\" in user_input:
-                user_input =user_input.replace("\\", r"\\")
+                user_input = user_input.replace("\\", r"\\")
 
         user_input = split(user_input, posix=True)
         user_input = handle_quotes(user_input, self.exit_code)
@@ -366,7 +366,13 @@ class Shell:
     def do_past_input(self, numline):
         with open('.history.txt', 'r') as history_file:
             content = history_file.readlines()
-            line_content = content[numline - 1].split('\t')[1].strip()
+            if numline > 0:
+                line_content = content[numline - 1].split('\t')[1].strip()
+            elif numline == 0:
+                print('intek-sh: !0: event not found')
+                return
+            else:
+                line_content = content[numline].split('\t')[1].strip()
             line_contents = split(line_content, posix=True)
 
             print(line_content)
