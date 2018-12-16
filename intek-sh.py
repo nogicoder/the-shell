@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 
-from os import chdir, environ, getcwd, kill
+from os import chdir, environ, getcwd, kill, fork, getpid, wait
 from os.path import dirname, exists, isdir
 from shlex import split
 from signal import SIG_DFL, SIG_IGN, SIGINT, SIGQUIT, SIGTERM, SIGTSTP, signal
 from string import ascii_letters
-from subprocess import Popen
+from subprocess import Popen, PIPE, STDOUT, run
 from exit_code import error_flag_handle, handle_exit_code
 from globbing import globbing
 from history import print_newest_history, write_history
 from logical_operator import check_operator, check_valid_operator
 from path_expansions import path_expans
 from quoting import adding_backslash, handle_quotes
-from backquotes import handle_backquotes
 
 
 '''----------------------Create a Shell Object-----------------------------'''
@@ -27,6 +26,8 @@ class Shell:
                          'unset', 'cd', 'history')
         # set initial exit_code value
         self.exit_code = 0
+        self.out = ''
+        self.child_flag = False
         # run the REPL -- MAIN LOOP
         loop = True
         while loop:
@@ -79,6 +80,45 @@ class Shell:
             self.exit_code = 0
         return raw_input
 
+    def handle_backquotes(self, user_input):
+        arg_lst = []
+        for item in user_input:
+            if "`" in item:
+                result=''
+                i = 0
+                while i < len(item):
+                    if item[i] != '`':
+                        result += item[i]
+                        i += 1
+                    elif item[i] == '`':
+                        temp = ''
+                        i += 1
+                        while item[i] != '`':
+                            temp += item[i]
+                            i += 1
+
+                        self.execute_cmd(temp)
+                        self.child_flag = False
+                        result += self.out.strip()
+                        i += 1
+            else:
+                result = item
+            arg_lst.append(result)
+        return arg_lst
+
+
+    def execute_cmd(self, item):
+        self.child_flag = True
+        child = fork()
+        user_item = split(item, posix=True)
+        if not child:
+            cpid = getpid()
+            self.execute_commands(user_item, item)
+            kill(getpid(), SIGTERM)
+        if child:
+            wait()
+
+
     def handle_expansion(self, raw_input):
         # handle the quotes
         user_input = adding_backslash(raw_input)
@@ -91,7 +131,7 @@ class Shell:
         else:
             user_input = split(user_input, posix=True)
             user_input = handle_quotes(user_input)
-
+            user_input = self.handle_backquotes(user_input)
         return user_input
 
     def execute_commands(self, user_input, raw_input):
@@ -191,14 +231,18 @@ class Shell:
 
     # exit feature
     def exit(self, user_input):
+        self.out = ''
         print('exit')
         if len(user_input) > 1 and not user_input[1].isdigit():
             print('intek-sh: exit: ' + user_input[1] +
                   ': numeric argument required')
+            self.out = 'intek-sh: exit: ' + user_input[1] + \
+                  ': numeric argument required'
             exit(2)
         elif len(user_input) > 2:
             self.exit_code = 1
             print('intek-sh: exit: too many arguments')
+            self.out = 'intek-sh: exit: too many arguments'
         else:
             if len(user_input) > 1:
                 self.exit_code = int(user_input[1])
@@ -206,6 +250,7 @@ class Shell:
 
     # printenv feature
     def printenv(self, user_input, error_flag=False):
+        self.out = ''
         # if no argument is provided
         if len(user_input) is 1:
             for key in environ:
@@ -223,6 +268,7 @@ class Shell:
 
     # export feature
     def export(self, user_input, error_flag=False):
+        self.out = ''
         for item in user_input[1:]:
             if '=' in item:
                 items = item.split('=', 1)
@@ -263,6 +309,7 @@ class Shell:
 
     # unset feature
     def unset(self, user_input, error_flag=False):
+        self.out = ''
         for key in user_input[1:]:
             try:
                 # handle the case ''; '   '; 'b    a'
@@ -295,6 +342,7 @@ class Shell:
 
     # cd feature
     def cd(self, user_input, error_flag=False):
+        self.out = ''
         try:
             if len(user_input) is 1:
                 dir_path = environ['HOME']
@@ -323,6 +371,7 @@ class Shell:
         self.exit_code = error_flag_handle(error_flag)
 
     def history(self, user_input):
+        self.out = ''
         self.exit_code = 0
         # with only 'history' command
         if len(user_input) is 1:
@@ -343,6 +392,7 @@ class Shell:
 
     # '!' command, ralating to history
     def do_exclamation(self, user_input):
+        self.out = ''
         command = user_input[0]
         self.exit_code = 0
         try:
@@ -364,6 +414,7 @@ class Shell:
             pass
 
     def do_past_input(self, numline):
+        self.out = ''
         with open('.history.txt', 'r') as history_file:
             content = history_file.readlines()
             line_content = content[numline - 1].split('\t')[1].strip()
@@ -401,6 +452,7 @@ class Shell:
                 self.pid_list.append(child.pid)
                 child.wait()
                 self.exit_code = child.returncode
+                self.out = child.communicate()[0].decode()
         # catch if no execute permission on the file
         except PermissionError:
             print('intek-sh: {}: Permission denied'.format(command))
@@ -423,9 +475,12 @@ class Shell:
             paths = environ['PATH'].split(':')
             # check if the command is in paths
             if command and (exists(path + '/' + command) for path in paths):
-                child = Popen(user_input)
+                child = Popen(user_input, stdout=PIPE, stderr=STDOUT)
                 self.pid_list.append(child.pid)
+                self.out = child.communicate()[0].decode()
                 child.wait()
+                if not self.child_flag:
+                    print(self.out.strip())
                 if child.returncode < 0:
                     self.exit_code = 128 - child.returncode
                 else:

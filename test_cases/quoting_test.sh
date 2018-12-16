@@ -22,3 +22,5 @@ echo '$HOME"$HOME"$HOME'
 echo "$HOME
 echo "$PATH'$HOME'$HOME"$HOME
 echo '$HOME'$HOME'$HOME'
+echo '$HOME'$HOME'$HOME'$HOME
+echo '$HOME'$HOME"$HOME"$HOME
