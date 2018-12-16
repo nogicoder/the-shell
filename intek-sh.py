@@ -6,6 +6,7 @@ from shlex import split
 from signal import SIG_DFL, SIG_IGN, SIGINT, SIGQUIT, SIGTERM, SIGTSTP, signal
 from string import ascii_letters
 from subprocess import Popen
+
 from exit_code import error_flag_handle
 from globbing import globbing
 from auto_completion import Initialize_completion
@@ -377,9 +378,9 @@ class Shell:
         # if command is an executable file
         if command.startswith('./') or command.startswith('../'):
             self.run_file(user_input)
-        elif command in ['false', 'False']:
+        elif command in 'false':
             self.exit_code = 1
-        elif command in ['true', 'True']:
+        elif command in 'true':
             self.exit_code = 0
         # if command is not an executable file
         else:
