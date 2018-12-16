@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-
-echo "Thank you. That'll be \$4.96, please," said the cashier
+echo '$PATH'
 "${HOME}"
 echo "  \$HOME  "
 echo '  \$HOME  '
@@ -20,10 +19,5 @@ echo "   $HOMEasdf  "
 echo \*.py
 echo "*.py"
 echo ' *.py'
-echo *y*
 echo *"y*"
-echo *"y"*
-echo "$HOME'$HOME'$HOME"
-echo '$HOME"$HOME"$HOME'
-echo "$HOME'$HOME'$HOME
-echo "$PATH'$HOME'$HOME"$HOME
+echo "asdfasdf
