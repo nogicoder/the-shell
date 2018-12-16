@@ -107,8 +107,8 @@ class Shell:
         command = user_input[0]
         write_history(command, raw_input)
 
-        if (not "\&&" in raw_input and not "\||" in raw_input and
-            ('&&' in raw_input or '||' in raw_input)):
+        if ("\\&&" not in raw_input and "\\||" not in raw_input and
+           ('&&' in raw_input or '||' in raw_input)):
                 if check_valid_operator(raw_input):
                     return self.logical_operator(raw_input)
                 else:
@@ -437,7 +437,8 @@ class Shell:
                 # get paths to external binaries indicated by variable PATH
                 paths = environ['PATH'].split(':')
                 # check if the command is in paths
-                if command and (exists(path + '/' + command) for path in paths):
+                if command and (exists(path + '/' + command)
+                                for path in paths):
                     child = Popen(user_input)
                     self.pid_list.append(child.pid)
                     child.wait()

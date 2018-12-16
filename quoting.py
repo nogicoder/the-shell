@@ -10,7 +10,7 @@ def process_new_line(new_line, user_input, quote):
     try:
         while new_line[j] != quote:
             if new_line[j] in glob_sign:
-                user_input +=  '\\' + new_line[j]
+                user_input += '\\' + new_line[j]
             else:
                 user_input += new_line[j]
             j += 1
@@ -36,7 +36,7 @@ def adding_backslash(raw_input, user_input=''):
                 user_input += raw_input[i]
             else:
                 quote = raw_input[i]
-                if quote in ['`', '\\'] :
+                if quote in ['`', '\\']:
                     user_input += '"' + quote
                 else:
                     user_input += '\\' + quote + quote
@@ -44,7 +44,7 @@ def adding_backslash(raw_input, user_input=''):
                     i += 1
                     while raw_input[i] != quote:
                         if raw_input[i] in glob_sign:
-                            user_input +=  '\\' + raw_input[i]
+                            user_input += '\\' + raw_input[i]
                         else:
                             user_input += raw_input[i]
                         i += 1

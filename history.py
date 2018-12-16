@@ -14,7 +14,7 @@ def write_history(command, raw_input):
 
             # check if history file is not empty
             if num_line > 1:
-                
+
                 last_line = content[-1].split('\t')
                 last_input = last_line[1].strip()
 

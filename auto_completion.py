@@ -24,7 +24,7 @@ class Completer:
                     if exists(item) and isdir(item):
                         names += listdir(item)
                         names += ['exit', 'printenv', 'export',
-                                 'unset', 'cd', 'history']
+                                  'unset', 'cd', 'history']
                 for name in names:
                     if name:
                         name += ' '
