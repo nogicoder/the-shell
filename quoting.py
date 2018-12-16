@@ -90,7 +90,7 @@ def handle_single_quote(item, pos1, pos2, exit_code):
 def split_output(result):
     res = []
     for elem in result:
-        res.extend(elem.split())
+        res.extend(elem.split(" "))
     return res
 
 

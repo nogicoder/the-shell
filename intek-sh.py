@@ -50,9 +50,11 @@ class Shell:
                 self.exit_code = 130
                 print('')
                 pass
-            # except Exception:
-            #     pass
+            # try not to crashed
+            except Exception:
+                pass
 
+    # handle the signal
     def do_signal(self, signal, frame):
         try:
             self.exit_code = 128 + signal
@@ -64,6 +66,7 @@ class Shell:
         except ProcessLookupError:
             pass
 
+    # ignore the signal with intek-sh and apply to child process after
     def handle_signal(self, signal_flag=False):
         signal(SIGQUIT, SIG_IGN)  # -3
         signal(SIGTSTP, SIG_IGN)  # -20
@@ -81,6 +84,7 @@ class Shell:
             self.exit_code = 0
         return raw_input
 
+    # handle expansion of inputs (quotes, path expans, glob)
     def handle_expansion(self, raw_input):
         # handle the quotes
         user_input = adding_backslash(raw_input)
@@ -94,6 +98,7 @@ class Shell:
 
         return user_input
 
+    # execute commands with builtin, external and logical operators
     def execute_commands(self, user_input, raw_input):
         if not user_input:
             self.exit_code = 1
@@ -106,6 +111,9 @@ class Shell:
             ('&&' in raw_input or '||' in raw_input)):
                 if check_valid_operator(raw_input):
                     return self.logical_operator(raw_input)
+                else:
+                    self.exit_code = 2
+                    return
 
         # check if command is a built-in
         if command in self.builtins:
@@ -322,6 +330,7 @@ class Shell:
             error_flag = True
         self.exit_code = error_flag_handle(error_flag)
 
+    # history feature
     def history(self, user_input):
         self.exit_code = 0
         # with only 'history' command
@@ -329,16 +338,11 @@ class Shell:
             with open('.history.txt', 'r') as history_file:
                 for line in history_file:
                     print('  ' + line.strip())
-        # 'history + options' command
         else:
-            # clear option 'history -c'
             if '-c' in user_input[1:]:
                 open('.history.txt', "w").close()
-            # display [n] newest history 'history [n]'
             else:
-                # number of last lines need to print
                 n = user_input[1]
-                # function to print
                 self.exit_code = print_newest_history(n)
 
     # '!' command, ralating to history
@@ -350,7 +354,7 @@ class Shell:
                 with open('.history.txt') as history_file:
                     content = history_file.read()
                     if content:
-                        numline = 0
+                        numline = -1
                         self.do_past_input(numline)
                     else:
                         print('intek-sh: {}: event not found'.format(command))
@@ -363,6 +367,7 @@ class Shell:
         except RecursionError:
             pass
 
+    # do command from history
     def do_past_input(self, numline):
         with open('.history.txt', 'r') as history_file:
             content = history_file.readlines()
@@ -384,9 +389,9 @@ class Shell:
         # if command is an executable file
         if command.startswith('./') or command.startswith('../'):
             self.run_file(user_input)
-        elif command in 'false':
+        elif command is 'false':
             self.exit_code = 1
-        elif command in 'true':
+        elif command is 'true':
             self.exit_code = 0
         # if command is not an executable file
         else:
