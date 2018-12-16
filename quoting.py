@@ -69,7 +69,7 @@ def handle_single_quote(item, pos1, pos2, exit_code):
     elif pos1 > pos2:
         left = item[:pos2]
         temp_mid = handle_exit_code(item[pos2 + 1:pos1], exit_code)
-        mid = handle_exit_code(" ".join(path_expans(split('"' + temp_mid + '"', posix=True))), exit_code)
+        mid = " ".join(path_expans(split('"' + temp_mid + '"', posix=True)))
         right = item[pos1 + 1:]
 
     if "'" in mid:

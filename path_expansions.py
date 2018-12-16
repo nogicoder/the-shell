@@ -184,6 +184,7 @@ def path_expans_one(path):
 
 def path_expans(inp):
     path_expaned = []
+    glob_sign = ['\\*', '\\?', '\\[', '\\]']
     try:
         for arg in inp:
             if '\\$' in arg or '$\\' in arg:
@@ -192,8 +193,12 @@ def path_expans(inp):
                 path_expaned.append(arg)
             elif '\\' in arg:
                 pos = arg.index('\\')
-                arg = path_expans_one(arg[:pos]) + arg[pos + 1:]
-                path_expaned.append(arg)
+                if all(i not in arg for i in glob_sign):
+                    arg = path_expans_one(arg[:pos]) + arg[pos + 1:]
+                    path_expaned.append(arg)
+                else:
+                    arg = path_expans_one(arg[:pos]) + arg[pos:]
+                    path_expaned.append(arg)
             elif '$' in arg or '~' in arg:
                 if '${' in arg:
                     if has_bad_substitution(arg):
