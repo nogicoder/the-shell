@@ -175,7 +175,6 @@ def path_expans_one(path):
     try:
         if '~' in path or '$' in path:
             return para_expans(tilde_expans(path))
-            return new_path
         else:
             return path
     except Exception:
