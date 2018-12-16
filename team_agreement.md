@@ -36,18 +36,26 @@
   file and reaccess to list history or recall with !)
 + dynamic command completion ★★✩✩ (use tab to finish the command/ filename)
 *Work Schedule*
-+ Phase 1: 
-# pan: globbing, path expansions - DL: 8pm 01/12 - Complete time: 
++ Phase 1:
+# pan: globbing, path expansions - DL: 8pm 01/12 - Complete time:
 # son: minish, quoting - DL: 8pm 01/12 - Complete time: 8pm 01/12
 # mbach: minish, exit code - DL: 8pm 30/12 - Complete time: 8pm 30/12
 Note: mbach continue working on 'logical operators' - DL: 8pm 01/12 - Complete time:
-+ Phase 2: 
++ Phase 2:
 ## mbach: logical operators, signal handling - DL: 10am 08/12 - Complete time: 08/12
 ## pan: path expansions - DL: 10am 06/12 - Complete time: 11/12
 ## son: quoting (escape character), history - DL: 10am 06/12 - Complete time: History (07/12)
 + Phase 3:
-## mbach: dynamic completion - DL: 10pm 15/12 - Complete time: 12/12 
-## pan: pipes & redirection - DL: 10pm 15/12 - Complete time: 
-## nson: quoting (escape character), pipes & redirection - DL: 10pm 15/12 - Complete time:
-Note: mbach continue working on other features
-
+## mbach: dynamic completion, quoting - DL: 10pm 15/12 - Complete time: 16/12
+## pan: pipes & redirection - DL: 10pm 15/12 - Complete time: N/A
+## nson: quoting (escape character), pipes & redirection - DL: 10pm 15/12 - Complete time: N/A
+*Completed Features*
++ globbing ★✩✩✩ (Handling wildcards)
++ path expansions (tilde expansions, parameter expansions)★✩✩✩ (Use of ~ and $)
++ handling the exit status of commands ★✩✩✩ (exit code handling)
++ logical operators && and || ★★✩✩ (handling right and left side of the signs)
++ signals handling ★★✩✩ (3 standard keys)
++ quoting (quotes & escape characters) ★✩✩✩
++ the command history with the builtins history and ! ★★✩✩ (store history in a
+  file and reaccess to list history or recall with !)
++ dynamic command completion ★★✩✩ (use tab to finish the command/ filename)
