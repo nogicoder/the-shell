@@ -87,6 +87,13 @@ def handle_single_quote(item, pos1, pos2, exit_code):
     return item
 
 
+def split_output(result):
+    res = []
+    for elem in result:
+        res.extend(elem.split())
+    return res
+
+
 def handle_quotes(user_input, exit_code):
     result = []
     for item in user_input:
@@ -119,4 +126,5 @@ def handle_quotes(user_input, exit_code):
         item_list = split("'" + item + "'", posix=True)
         item = " ".join(globbing(item_list))
         result.append(item)
-    return result
+    splited = split_output(result)
+    return splited
