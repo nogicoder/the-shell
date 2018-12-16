@@ -2,6 +2,7 @@
 
 import shlex
 from subprocess import PIPE, Popen
+from os import getpid, fork, wait, kill
 
 from history import print_newest_history, write_history
 from intekshell import Shell
@@ -19,15 +20,17 @@ def handle_shell(shell_obj):
         try:
             shell_obj.handle_signal()
             raw_input = input('\x1b[1m\033[92mintek-sh$\033[0m\x1b[1m\x1b[0m ')
-            # pipe case
-            if '|' in raw_input:
-                do_pipe_case(raw_input)
+            # pipe case ; 
+            if '|' in raw_input and '||' not in raw_input:
+                do_pipe_case(shell_obj, raw_input)
+            # subshell case:
+            elif raw_input.startswith('(') and raw_input.endswith(')'):
+                do_subshell_case(shell_obj, raw_input)
             # normal case
             else:
                 do_normal_case(shell_obj, raw_input)
-
         # catch EOFError when no input is prompted in
-        except EOFError:
+        except EOFError: 
             break
         # catch IndexError when nothing is input in (empty input list)
         except IndexError:
@@ -42,32 +45,59 @@ def handle_shell(shell_obj):
             pass
 
 
-def do_pipe_case(raw_input):
+def do_pipe_case(shell_obj, raw_input):
+    print('pipe case')
     write_history('a', raw_input)
-    inputs = raw_input.split('|')
+    pipe_inputs = raw_input.split('|')
     i = 0
     p = {}
-    for command in inputs:
-        command = shlex.split(command.strip())
+    shell_obj.shell_stdout = PIPE
+    shell_obj.shell_stderr = PIPE
+    for command in pipe_inputs:
+        shell_obj.raw_input = command
+        shell_obj.user_input = shell_obj.handle_input()
         if i == 0:
-            p[i] = Popen(command, stdin=None, stdout=PIPE, stderr=PIPE)
+            shell_obj.shell_stdin = None
+            p[i] = shell_obj.execute_commands(shell_obj.user_input)
         else:
-            p[i] = Popen(command, stdin=p[i-1].stdout, stdout=PIPE, stderr=PIPE)
+            shell_obj.shell_stdin = p[i-1].stdout
+            p[i] = shell_obj.execute_commands(shell_obj.user_input)
         i = i + 1
     (output, _) = p[i - 1].communicate()
     print(output.decode().strip())
-
+    
 
 def do_normal_case(shell_obj, raw_input):
+    print('normal case')
     # Setting Shell's inputs var
     shell_obj.raw_input = raw_input
     shell_obj.user_input = shell_obj.handle_input()
     # Setting streams
     shell_obj.shell_input = None
     shell_obj.shell_output = None
+    shell_obj.shell_stderr = None
     # Execute
     shell_obj.execute_commands(shell_obj.user_input)
-    # print(shell_obj.process.communicate()[0].decode())
+    # Why need this????
+    print(shell_obj.process.communicate()[0].decode().strip())
+
+
+def do_subshell_case(shell_obj, raw_input):
+    print('subshell case')
+    child = fork()
+    if not child:
+        print(getpid())
+        print('in child')
+        shell_obj.raw_input = raw_input[1:len(raw_input) - 1]
+        shell_obj.user_input = shell_obj.handle_input()
+        process = shell_obj.execute_commands(shell_obj.user_input)
+        output = process.communicate()[0].decode().strip()
+        print(output)
+        kill(getpid(), 13)
+    else:
+        print(getpid())
+        wait()
+
 
 
 if __name__ == "__main__":

@@ -37,6 +37,7 @@ class Shell():
         # pipes and redirections
         self.shell_stdin = None
         self.shell_stdout = None
+        self.shell_stderr = None
         self.process = None
 
     # execute signal
@@ -55,11 +56,11 @@ class Shell():
     def handle_signal(self, signal_flag=False):
         signal(SIGQUIT, SIG_IGN)  # -3
         signal(SIGTSTP, SIG_IGN)  # -20
-        signal(SIGTERM, SIG_IGN)
+        # signal(SIGTERM, SIG_IGN)
         if signal_flag:
             signal(SIGQUIT, self.do_signal)
             signal(SIGTSTP, self.do_signal)
-            signal(SIGTERM, self.do_signal)
+            # signal(SIGTERM, self.do_signal)
 
     # Handling input to match each feature's requirement
     def handle_input(self):
@@ -93,7 +94,7 @@ class Shell():
                 # if command is not a built-in
                 else:
                     # Only this function use 'commands'
-                    self.do_external(user_input)
+                    return self.do_external(user_input)
 
     # logical operator handling feature
     def logical_operator(self, raw_input):
@@ -366,14 +367,16 @@ class Shell():
         command = user_input[0]
         # if command is an executable file
         if command.startswith('./'):
-            self.run_file(user_input)
+            return self.run_file(user_input)
+            # self.run_file(user_input)
         elif command in ['false', 'False']:
             self.exit_code = 1
         elif command in ['true', 'True']:
             self.exit_code = 0
         # if command is not an executable file
         else:
-            self.run_binary(user_input)
+            return self.run_binary(user_input)
+            # self.run_binary(user_input)
 
     # run the executable file
     def run_file(self, user_input):
@@ -386,14 +389,13 @@ class Shell():
                 self.exit_code = 126
             else:
                 # run the file
-                child = Popen(user_input, stdout=self.shell_stdout, stdin=self.shell_stdin)
+                child = Popen(user_input, stdout=self.shell_stdout, stdin=self.shell_stdin, stderr=self.shell_stderr)
                 self.process = child
                 self.pid_list.append(child.pid)
                 child.wait()
                 self.exit_code = child.returncode
-
-                output = child.communicate()[0]
-                return output.decode().strip()
+                # return process obj
+                return child 
         # catch if no execute permission on the file
         except PermissionError:
             print('intek-sh: %s: Permission denied' % (command))
@@ -416,7 +418,7 @@ class Shell():
             paths = environ['PATH'].split(':')
             # check if the command is in paths
             if command and (exists(path + '/' + command) for path in paths):
-                child = Popen(user_input, stdout=self.shell_stdout, stdin=self.shell_stdin)
+                child = Popen(user_input, stdout=self.shell_stdout, stdin=self.shell_stdin, stderr=self.shell_stderr)
                 self.process = child
                 self.pid_list.append(child.pid)
                 child.wait()
@@ -424,9 +426,8 @@ class Shell():
                     self.exit_code = 128 - child.returncode
                 else:
                     self.exit_code = child.returncode
-
-                output = child.communicate()[0]
-                return output.decode().strip()
+                # return process obj
+                return child
         # catch if the command doesn't exist
         except FileNotFoundError:
             print('intek-sh: %s: command not found' % (command))
